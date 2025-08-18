@@ -1,0 +1,42 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  tomcat:
+    max-threads: 500
+    max-connections: 1000
+    keep-alive-timeout: 30000
+    connection-timeout: 3000
+  compression:
+    enabled: true
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  datasource:
+    url: "jdbc:mysql://localhost:3306/travel_app"
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 50
+      connection-timeout: 30000
+      idle-timeout: 60000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+jwt:
+  base64-secret: b+cju49j8H8Seuyegekiu4KcJeBc9WPa2k8iSFhAznaWtfT45gWA9RfFZ6jdx6qHOGVMQKI0JQAiBsQ+jObyhw==
+  token-create-validity-in-seconds: 6400
+  token-verify-validity-in-seconds: 8640000
+
+app:
+  file:
+    upload-dir: uploads/
+    base-url: http://localhost:8081/uploads
