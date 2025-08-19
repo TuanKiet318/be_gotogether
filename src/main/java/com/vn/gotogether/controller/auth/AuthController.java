@@ -4,8 +4,8 @@ package com.vn.gotogether.controller.auth;
 
 import com.vn.gotogether.dto.ApiResponse;
 import com.vn.gotogether.dto.auth.LoginDto;
-import com.vn.gotogether.entity.user.RefreshToken;
-import com.vn.gotogether.entity.user.User;
+import com.vn.gotogether.entity.RefreshToken;
+import com.vn.gotogether.entity.User;
 import com.vn.gotogether.error.UnauthorizedException;
 import com.vn.gotogether.service.auth.RefreshTokenService;
 import com.vn.gotogether.service.user.UserService;

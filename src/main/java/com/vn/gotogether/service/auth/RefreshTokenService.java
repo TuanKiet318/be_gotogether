@@ -2,8 +2,8 @@ package com.vn.gotogether.service.auth;
 
 
 
-import com.vn.gotogether.entity.user.RefreshToken;
-import com.vn.gotogether.entity.user.User;
+import com.vn.gotogether.entity.RefreshToken;
+import com.vn.gotogether.entity.User;
 import com.vn.gotogether.error.UnauthorizedException;
 import com.vn.gotogether.repository.auth.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;

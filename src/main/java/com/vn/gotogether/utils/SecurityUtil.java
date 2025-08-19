@@ -1,7 +1,7 @@
 package com.vn.gotogether.utils;
 
 
-import com.vn.gotogether.entity.user.User;
+import com.vn.gotogether.entity.User;
 import com.nimbusds.jose.util.Base64;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

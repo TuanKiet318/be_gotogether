@@ -2,7 +2,7 @@ package com.vn.gotogether.repository.user;
 
 
 
-import com.vn.gotogether.entity.user.User;
+import com.vn.gotogether.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

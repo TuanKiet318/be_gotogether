@@ -2,7 +2,7 @@ package com.vn.gotogether.utils;
 
 
 
-import com.vn.gotogether.entity.user.User;
+import com.vn.gotogether.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

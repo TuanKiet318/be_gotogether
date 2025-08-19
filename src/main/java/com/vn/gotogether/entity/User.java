@@ -1,4 +1,4 @@
-package com.vn.gotogether.entity.user;
+package com.vn.gotogether.entity;
 
 
 import jakarta.persistence.*;
