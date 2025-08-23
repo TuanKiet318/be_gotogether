@@ -36,5 +36,5 @@ public class Itinerary {
             joinColumns = @JoinColumn(name = "itinerary_id"),
             inverseJoinColumns = @JoinColumn(name = "attraction_id"))
     @Builder.Default
-    private Set<Attraction> attractions = new HashSet<>();
+    private Set<Place> attractions = new HashSet<>();
 }

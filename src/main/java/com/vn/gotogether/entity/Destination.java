@@ -2,8 +2,7 @@ package com.vn.gotogether.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name = "destinations")
@@ -16,12 +15,18 @@ public class Destination {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-    @Column(nullable = false, unique = true, length = 200)
-    private String name; // "Quy Nhơn"
-    @Column(unique = true, length = 200)
-    private String slug;                  // "quy-nhon"
+
+    @Column(nullable = false, length = 255)
+    private String name;
+
+    private String country;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     private Double lat;
-    private Double lng;
-    @Column(nullable = false)
-    private Instant createdAt;
+    private Double lon;
+
+    @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Place> places;
 }

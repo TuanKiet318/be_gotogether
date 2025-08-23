@@ -4,6 +4,8 @@ package com.vn.gotogether.controller.auth;
 
 import com.vn.gotogether.dto.ApiResponse;
 import com.vn.gotogether.dto.auth.LoginDto;
+import com.vn.gotogether.dto.user.UserRegisterRequest;
+import com.vn.gotogether.dto.user.UserResponse;
 import com.vn.gotogether.entity.RefreshToken;
 import com.vn.gotogether.entity.User;
 import com.vn.gotogether.error.UnauthorizedException;
@@ -224,4 +226,13 @@ public class AuthController {
                 "active", user.isActive()
         )));
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> register(@RequestBody UserRegisterRequest request) {
+        // ép role mặc định là ROLE_USER
+        request.setRoleName("ROLE_USER");
+        UserResponse response = userService.registerUser(request);
+        return ResponseEntity.ok(response);
+    }
+
 }
