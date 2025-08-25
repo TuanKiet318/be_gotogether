@@ -101,67 +101,6 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/login/supplier")
-    public ResponseEntity<?> loginSupplier(
-            @RequestBody LoginDto loginDto,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId,
-            HttpServletRequest request
-    ) {
-
-        if(!Objects.equals(loginDto.getRoleName(), "ROLE_SUPPLIER"))
-        {
-            throw new UnauthorizedException("Không phải là nhà cung cấp");
-        }
-        UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword());
-
-        try {
-            // Xác thực đăng nhập
-            Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
-
-            // Lấy thông tin người dùng từ DB
-            User user = userService.findByEmail(loginDto.getEmail())
-                    .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại"));
-
-            // ✅ Cập nhật lastLogin & previousLogin
-            user.setPreviousLogin(user.getLastLogin());
-            user.setLastLogin(LocalDateTime.now());
-            userService.save(user); // Đảm bảo có phương thức save()
-
-            // Tạo access token
-            String accessToken = securityUtil.createToken(authentication);
-
-            if (deviceId == null || deviceId.isBlank()) {
-                deviceId = UUID.randomUUID().toString();
-            }
-
-            RefreshToken refreshToken = refreshTokenService.create(
-                    user,
-                    deviceId,
-                    request.getHeader("User-Agent"),
-                    request.getRemoteAddr()
-            );
-
-            ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken.getToken())
-                    .httpOnly(true)
-                    .secure(true)
-                    .path("/")
-                    .maxAge(refreshTokenExpiration)
-                    .build();
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .header("X-Device-Id", deviceId)
-                    .body(ApiResponse.success(Map.of("accessToken", accessToken)));
-
-        } catch (LockedException e) {
-            throw new UnauthorizedException("Tài khoản bị khóa");
-        } catch (DisabledException e) {
-            throw new UnauthorizedException("Tài khoản chưa được kích hoạt");
-        } catch (BadCredentialsException e) {
-            throw new UnauthorizedException("Email hoặc mật khẩu không đúng");
-        }
-    }
 
     @GetMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(
