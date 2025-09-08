@@ -33,5 +33,22 @@ public interface PlaceRepository extends JpaRepository<Place, String> {
             "LEFT JOIN FETCH p.category " +
             "WHERE p.destination.id = :destinationId " +
             "ORDER BY p.rating DESC")
-    List<Place> findTop5ByDestinationOrderByRatingDesc(@Param("destinationId") String destinationId, Pageable pageable);    
+    List<Place> findTop5ByDestinationOrderByRatingDesc(@Param("destinationId") String destinationId, Pageable pageable);
+
+    @Query("SELECT p FROM Place p " +
+            "LEFT JOIN FETCH p.images " +
+            "LEFT JOIN FETCH p.category " +
+            "WHERE p.destination.id = :destinationId " +
+            "AND p.category.id IN ('cat-beach', 'cat-cultural', 'cat-nature', 'cat-temple', 'cat-market') " +
+            "ORDER BY p.rating DESC")
+    List<Place> findTopAttractionsByDestination(@Param("destinationId") String destinationId, Pageable pageable);
+
+    @Query("SELECT p FROM Place p " +
+            "LEFT JOIN FETCH p.images " +
+            "LEFT JOIN FETCH p.category " +
+            "WHERE p.destination.id = :destinationId " +
+            "AND p.category.id IN ('cat-restaurant', 'cat-food') " +
+            "ORDER BY p.rating DESC")
+    List<Place> findTopRestaurantsByDestination(@Param("destinationId") String destinationId, Pageable pageable);
+
 }

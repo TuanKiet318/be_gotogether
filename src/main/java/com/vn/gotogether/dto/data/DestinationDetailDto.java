@@ -20,4 +20,5 @@ public class DestinationDetailDto {
     private Double lon;
     private List<ImageDto> images;
     private List<BestPlaceDto> bestPlaces;
+    private List<BestPlaceDto> bestRestaurants;
 }
