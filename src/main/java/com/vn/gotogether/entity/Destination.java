@@ -29,4 +29,10 @@ public class Destination {
 
     @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Place> places;
+
+    @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DestinationImage> images;
+
+    @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Food> foods;
 }

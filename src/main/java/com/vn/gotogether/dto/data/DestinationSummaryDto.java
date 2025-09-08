@@ -9,13 +9,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PlaceDto {
+public class DestinationSummaryDto {
     private String id;
     private String name;
+    private String country;
+    private String description;
     private Double lat;
     private Double lon;
-    private Double rating;
-    private String address;
     private String mainImage;
-    private String description;
+    private Integer totalPlaces;
+    private Integer totalFoods;
 }

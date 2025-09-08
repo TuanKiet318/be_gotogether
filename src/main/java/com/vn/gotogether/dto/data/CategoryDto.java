@@ -9,13 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PlaceDto {
+public class CategoryDto {
     private String id;
     private String name;
-    private Double lat;
-    private Double lon;
-    private Double rating;
-    private String address;
-    private String mainImage;
-    private String description;
 }

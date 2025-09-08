@@ -31,7 +31,6 @@ public class Food {
     @JoinColumn(name = "destination_id", referencedColumnName = "id")
     private Destination destination;
 
-    // Constructor cho Builder và business logic (không bao gồm id vì auto-generated)
     public Food(String name, String description, String imageUrl, Destination destination) {
         this.name = name;
         this.description = description;
@@ -39,7 +38,6 @@ public class Food {
         this.destination = destination;
     }
 
-    // Constructor với tất cả fields (để Lombok Builder có thể sử dụng)
     @Builder
     public Food(String id, String name, String description, String imageUrl, Destination destination) {
         this.id = id;

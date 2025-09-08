@@ -1,30 +1,123 @@
 package com.vn.gotogether.controller.data;
 
-import com.vn.gotogether.dto.data.DestinationResponseDto;
+import com.vn.gotogether.dto.ApiResponse;
+import com.vn.gotogether.dto.data.*;
 import com.vn.gotogether.service.data.DestinationService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/destinations")
-@RequiredArgsConstructor
-@CrossOrigin
+@RequestMapping("/api")
+@CrossOrigin(origins = "*")
 public class DestinationController {
 
     private final DestinationService destinationService;
 
-    @GetMapping
-    public ResponseEntity<List<DestinationResponseDto>> getAllDestinations() {
-        List<DestinationResponseDto> destinations = destinationService.getAllDestinations();
-        return ResponseEntity.ok(destinations);
+    public DestinationController(DestinationService destinationService) {
+        this.destinationService = destinationService;
     }
 
-    @GetMapping("/country/{country}")
-    public ResponseEntity<List<DestinationResponseDto>> getDestinationsByCountry(
-            @PathVariable String country) {
-        List<DestinationResponseDto> destinations = destinationService.getDestinationsByCountry(country);
-        return ResponseEntity.ok(destinations);
+    // 1. GET ALL DESTINATIONS
+    @GetMapping("/destinations")
+    public ApiResponse<List<DestinationSummaryDto>> getAllDestinations() {
+        try {
+            List<DestinationSummaryDto> destinations = destinationService.getAllDestinations();
+            return ApiResponse.success(destinations);
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    // 2. GET DESTINATION DETAIL
+    @GetMapping("/destinations/{destinationId}")
+    public ApiResponse<DestinationDetailDto> getDestinationDetail(@PathVariable String destinationId) {
+        try {
+            DestinationDetailDto destination = destinationService.getDestinationDetail(destinationId);
+            return ApiResponse.success(destination);
+        } catch (EntityNotFoundException e) {
+            return ApiResponse.error(404, e.getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    // 3. GET CATEGORIES BY DESTINATION
+    @GetMapping("/destinations/{destinationId}/categories")
+    public ApiResponse<CategoriesResponseDto> getCategoriesByDestination(@PathVariable String destinationId) {
+        try {
+            CategoriesResponseDto response = destinationService.getCategoriesByDestination(destinationId);
+            return ApiResponse.success(response);
+        } catch (EntityNotFoundException e) {
+            return ApiResponse.error(404, e.getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    // 4. GET PLACES BY CATEGORY
+    @GetMapping("/destinations/{destinationId}/categories/{categoryId}/places")
+    public ApiResponse<PlacesResponseDto> getPlacesByCategory(
+            @PathVariable String destinationId,
+            @PathVariable String categoryId) {
+        try {
+            PlacesResponseDto response = destinationService.getPlacesByCategory(destinationId, categoryId);
+            return ApiResponse.success(response);
+        } catch (EntityNotFoundException e) {
+            return ApiResponse.error(404, e.getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    // 5. GET FOODS BY DESTINATION
+    @GetMapping("/destinations/{destinationId}/foods")
+    public ApiResponse<FoodsResponseDto> getFoodsByDestination(@PathVariable String destinationId) {
+        try {
+            FoodsResponseDto response = destinationService.getFoodsByDestination(destinationId);
+            return ApiResponse.success(response);
+        } catch (EntityNotFoundException e) {
+            return ApiResponse.error(404, e.getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    // 6. GET PLACE DETAIL
+    @GetMapping("/places/{placeId}")
+    public ApiResponse<PlaceDetailDto> getPlaceDetail(@PathVariable String placeId) {
+        try {
+            PlaceDetailDto place = destinationService.getPlaceDetail(placeId);
+            return ApiResponse.success(place);
+        } catch (EntityNotFoundException e) {
+            return ApiResponse.error(404, e.getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    // 7. GET ALL CATEGORIES
+    @GetMapping("/categories")
+    public ApiResponse<List<CategoryDto>> getAllCategories() {
+        try {
+            List<CategoryDto> categories = destinationService.getAllCategories();
+            return ApiResponse.success(categories);
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    // 8. SEARCH DESTINATIONS
+    @GetMapping("/destinations/search")
+    public ApiResponse<List<DestinationSummaryDto>> searchDestinations(
+            @RequestParam(value = "q", required = false) String keyword) {
+        try {
+            List<DestinationSummaryDto> destinations = destinationService.searchDestinations(keyword);
+            return ApiResponse.success(destinations);
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
     }
 }

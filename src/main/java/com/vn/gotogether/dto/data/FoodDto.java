@@ -6,15 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class DestinationResponseDto {
+@NoArgsConstructor
+@Builder
+public class FoodDto {
     private String id;
     private String name;
-    private String country;
     private String description;
-    private Double lat;
-    private Double lon;
-    private Integer totalPlaces;
+    private String imageUrl;
 }

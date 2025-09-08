@@ -5,17 +5,24 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PlaceDto {
+public class PlaceDetailDto {
     private String id;
     private String name;
     private Double lat;
     private Double lon;
+    private String description;
     private Double rating;
     private String address;
-    private String mainImage;
-    private String description;
+    private String website;
+    private String phone;
+    private DestinationDto destination;
+    private CategoryDto category;
+    private List<ImageDto> images;
 }
+

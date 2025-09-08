@@ -3,15 +3,34 @@ package com.vn.gotogether.repository.data;
 import com.vn.gotogether.entity.Destination;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DestinationRepository extends JpaRepository<Destination, String> {
 
-    @Query("SELECT d FROM Destination d ORDER BY d.name")
-    List<Destination> findAllOrderByName();
+    @Query("SELECT d FROM Destination d LEFT JOIN FETCH d.images ORDER BY d.name")
+    List<Destination> findAllWithImages();
 
-    @Query("SELECT d FROM Destination d WHERE d.country = :country ORDER BY d.name")
-    List<Destination> findByCountryOrderByName(String country);
+    @Query("SELECT d FROM Destination d " +
+            "LEFT JOIN FETCH d.images " +
+            "WHERE d.id = :destinationId")
+    Optional<Destination> findByIdWithDetails(@Param("destinationId") String destinationId);
+
+    @Query("SELECT COUNT(p) FROM Place p WHERE p.destination.id = :destinationId")
+    Integer countPlacesByDestinationId(@Param("destinationId") String destinationId);
+
+    @Query("SELECT COUNT(f) FROM Food f WHERE f.destination.id = :destinationId")
+    Integer countFoodsByDestinationId(@Param("destinationId") String destinationId);
+
+    @Query("SELECT d FROM Destination d " +
+            "LEFT JOIN FETCH d.images " +
+            "WHERE LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(d.country) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(d.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "ORDER BY d.name")
+    List<Destination> searchDestinations(@Param("keyword") String keyword);
 }
