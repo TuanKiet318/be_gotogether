@@ -152,30 +152,20 @@ public class DestinationService {
                         .build())
                 .collect(Collectors.toList());
 
-        List<Place> topPlaces = placeRepository.findTop5ByDestinationOrderByRatingDesc(
-                destination.getId(), PageRequest.of(0, 5));
+        // Get top attractions (non-restaurant places)
+        List<Place> topAttractions = placeRepository.findTopAttractionsByDestination(
+                destination.getId(), PageRequest.of(0, 10));
 
-        List<BestPlaceDto> bestPlaces = topPlaces.stream()
-                .map(place -> {
-                    String mainImage = place.getImages().stream()
-                            .findFirst()
-                            .map(PlaceImage::getImageUrl)
-                            .orElse(null);
+        // Get top restaurants and food places
+        List<Place> topRestaurants = placeRepository.findTopRestaurantsByDestination(
+                destination.getId(), PageRequest.of(0, 10));
 
-                    return BestPlaceDto.builder()
-                            .id(place.getId())
-                            .name(place.getName())
-                            .rating(place.getRating())
-                            .mainImage(mainImage)
-                            .lat(place.getLat())
-                            .description(place.getDescription())
-                            .lng(place.getLon())
-                            .category(CategoryDto.builder()
-                                    .id(place.getCategory().getId())
-                                    .name(place.getCategory().getName())
-                                    .build())
-                            .build();
-                })
+        List<BestPlaceDto> bestPlaces = topAttractions.stream()
+                .map(this::convertToBestPlaceDto)
+                .collect(Collectors.toList());
+
+        List<BestPlaceDto> bestRestaurants = topRestaurants.stream()
+                .map(this::convertToBestPlaceDto)
                 .collect(Collectors.toList());
 
         return DestinationDetailDto.builder()
@@ -187,6 +177,27 @@ public class DestinationService {
                 .lng(destination.getLon())
                 .images(images)
                 .bestPlaces(bestPlaces)
+                .bestRestaurants(bestRestaurants)
+                .build();
+    }
+
+
+    private BestPlaceDto convertToBestPlaceDto(Place place) {
+        place.getImages().size();
+        String mainImage = place.getImages().stream()
+                .findFirst()
+                .map(PlaceImage::getImageUrl)
+                .orElse(null);
+
+        return BestPlaceDto.builder()
+                .id(place.getId())
+                .name(place.getName())
+                .rating(place.getRating())
+                .mainImage(mainImage)
+                .category(CategoryDto.builder()
+                        .id(place.getCategory().getId())
+                        .name(place.getCategory().getName())
+                        .build())
                 .build();
     }
 
