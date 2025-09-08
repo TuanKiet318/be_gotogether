@@ -17,7 +17,7 @@ public class DestinationDetailDto {
     private String country;
     private String description;
     private Double lat;
-    private Double lon;
+    private Double lng;
     private List<ImageDto> images;
     private List<BestPlaceDto> bestPlaces;
 }
