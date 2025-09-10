@@ -13,7 +13,7 @@ public class PlaceDto {
     private String id;
     private String name;
     private Double lat;
-    private Double lon;
+    private Double lng;
     private Double rating;
     private String address;
     private String mainImage;
