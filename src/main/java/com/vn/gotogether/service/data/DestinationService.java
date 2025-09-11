@@ -226,6 +226,16 @@ public class DestinationService {
                         .imageUrl(img.getImageUrl())
                         .build())
                 .collect(Collectors.toList());
+        
+        List<ReviewDto> reviews = place.getReviews().stream()
+                .map(r -> ReviewDto.builder()
+                        .id(r.getId())
+                        .rating(r.getRating())
+                        .comment(r.getComment())
+                        .createdAt(r.getCreatedAt())
+                        .username(r.getUser().getName()) 
+                        .build())
+                .collect(Collectors.toList());
 
         return PlaceDetailDto.builder()
                 .id(place.getId())
@@ -246,8 +256,10 @@ public class DestinationService {
                         .name(place.getCategory().getName())
                         .build())
                 .images(images)
+                .reviews(reviews) 
                 .build();
     }
+
 
     private FoodDto convertToFoodDto(Food food) {
         return FoodDto.builder()

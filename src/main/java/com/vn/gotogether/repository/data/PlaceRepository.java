@@ -25,8 +25,11 @@ public interface PlaceRepository extends JpaRepository<Place, String> {
             "LEFT JOIN FETCH p.destination " +
             "LEFT JOIN FETCH p.category " +
             "LEFT JOIN FETCH p.images " +
+            "LEFT JOIN FETCH p.reviews r " +
+            "LEFT JOIN FETCH r.user " +
             "WHERE p.id = :placeId")
     Optional<Place> findByIdWithDetails(@Param("placeId") String placeId);
+
 
     @Query("SELECT p FROM Place p " +
             "LEFT JOIN FETCH p.images " +

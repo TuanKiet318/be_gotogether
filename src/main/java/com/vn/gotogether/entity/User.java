@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -53,6 +54,9 @@ public class User {
 
     @Column(name = "password_updated_at")
     LocalDateTime passwordUpdatedAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PlaceReview> reviews;
 
     @PrePersist
     void onCreate() {
