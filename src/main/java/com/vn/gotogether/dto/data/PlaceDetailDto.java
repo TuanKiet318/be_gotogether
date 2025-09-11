@@ -15,7 +15,7 @@ public class PlaceDetailDto {
     private String id;
     private String name;
     private Double lat;
-    private Double lon;
+    private Double lng;
     private String description;
     private Double rating;
     private String address;
