@@ -21,4 +21,5 @@ public class DestinationDetailDto {
     private List<ImageDto> images;
     private List<BestPlaceDto> bestPlaces;
     private List<BestPlaceDto> bestRestaurants;
+    private List<DestinationInfoDto> infos;
 }

@@ -25,5 +25,6 @@ public class PlaceDetailDto {
     private CategoryDto category;
     private List<ImageDto> images;
     private List<ReviewDto> reviews;
+    private List<PlaceDto> nearbyPlaces;
 }
 
