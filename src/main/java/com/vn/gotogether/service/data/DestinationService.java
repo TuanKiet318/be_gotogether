@@ -118,8 +118,24 @@ public class DestinationService {
         Place place = placeRepository.findByIdWithDetails(placeId)
                 .orElseThrow(() -> new EntityNotFoundException("Place not found with id: " + placeId));
 
-        return convertToPlaceDetailDto(place);
+        List<Place> nearbyPlaces = placeRepository.findNearbyPlaces(
+                place.getLat(),
+                place.getLon(),
+                place.getDestination().getId(),
+                place.getId(),
+                PageRequest.of(0, 6)
+        );
+
+        List<PlaceDto> nearbyDtos = nearbyPlaces.stream()
+                .map(this::convertToPlaceDto)
+                .toList();
+
+        PlaceDetailDto dto = convertToPlaceDetailDto(place);
+        dto.setNearbyPlaces(nearbyDtos);
+
+        return dto;
     }
+
 
     // Helper methods
     private DestinationSummaryDto convertToSummaryDto(Destination destination) {
@@ -154,11 +170,11 @@ public class DestinationService {
 
         // Get top attractions (non-restaurant places)
         List<Place> topAttractions = placeRepository.findTopAttractionsByDestination(
-                destination.getId(), PageRequest.of(0, 10));
+                destination.getId(), PageRequest.of(0, 4));
 
         // Get top restaurants and food places
         List<Place> topRestaurants = placeRepository.findTopRestaurantsByDestination(
-                destination.getId(), PageRequest.of(0, 10));
+                destination.getId(), PageRequest.of(0, 4));
 
         List<BestPlaceDto> bestPlaces = topAttractions.stream()
                 .map(this::convertToBestPlaceDto)
@@ -166,6 +182,14 @@ public class DestinationService {
 
         List<BestPlaceDto> bestRestaurants = topRestaurants.stream()
                 .map(this::convertToBestPlaceDto)
+                .collect(Collectors.toList());
+        List<DestinationInfoDto> infoDtos = destination.getInfos().stream()
+                .map(info -> DestinationInfoDto.builder()
+                        .id(info.getId())
+                        .infoKey(info.getInfoKey())
+                        .infoValue(info.getInfoValue())
+                        .imageUrl(info.getImageUrl())
+                        .build())
                 .collect(Collectors.toList());
 
         return DestinationDetailDto.builder()
@@ -178,6 +202,7 @@ public class DestinationService {
                 .images(images)
                 .bestPlaces(bestPlaces)
                 .bestRestaurants(bestRestaurants)
+                .infos(infoDtos)
                 .build();
     }
 
@@ -229,6 +254,16 @@ public class DestinationService {
                         .imageUrl(img.getImageUrl())
                         .build())
                 .collect(Collectors.toList());
+        
+        List<ReviewDto> reviews = place.getReviews().stream()
+                .map(r -> ReviewDto.builder()
+                        .id(r.getId())
+                        .rating(r.getRating())
+                        .comment(r.getComment())
+                        .createdAt(r.getCreatedAt())
+                        .username(r.getUser().getName()) 
+                        .build())
+                .collect(Collectors.toList());
 
         return PlaceDetailDto.builder()
                 .id(place.getId())
@@ -249,8 +284,10 @@ public class DestinationService {
                         .name(place.getCategory().getName())
                         .build())
                 .images(images)
+                .reviews(reviews) 
                 .build();
     }
+
 
     private FoodDto convertToFoodDto(Food food) {
         return FoodDto.builder()

@@ -3,6 +3,7 @@ package com.vn.gotogether.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "destinations")
@@ -35,4 +36,8 @@ public class Destination {
 
     @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Food> foods;
+
+    @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<DestinationInfo> infos;
+
 }

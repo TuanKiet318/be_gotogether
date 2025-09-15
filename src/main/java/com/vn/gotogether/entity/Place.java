@@ -2,7 +2,10 @@ package com.vn.gotogether.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "places")
@@ -39,5 +42,9 @@ public class Place {
     private String phone;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlaceImage> images;
+    private Set<PlaceImage> images;
+
+    @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<PlaceReview> reviews;
+
 }

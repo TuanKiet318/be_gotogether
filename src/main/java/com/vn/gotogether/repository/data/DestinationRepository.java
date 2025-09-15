@@ -17,6 +17,7 @@ public interface DestinationRepository extends JpaRepository<Destination, String
 
     @Query("SELECT d FROM Destination d " +
             "LEFT JOIN FETCH d.images " +
+            "LEFT JOIN FETCH d.infos " +
             "WHERE d.id = :destinationId")
     Optional<Destination> findByIdWithDetails(@Param("destinationId") String destinationId);
 
