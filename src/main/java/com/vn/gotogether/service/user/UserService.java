@@ -7,7 +7,7 @@ import com.vn.gotogether.dto.user.UserResponse;
 import com.vn.gotogether.dto.user.UserUpdateRequest;
 import com.vn.gotogether.entity.Role;
 import com.vn.gotogether.entity.User;
-import com.vn.gotogether.error.InvalidDataException;
+import com.vn.gotogether.exception.InvalidDataException;
 import com.vn.gotogether.repository.user.RoleRepository;
 import com.vn.gotogether.repository.user.UserRepository;
 import com.vn.gotogether.utils.UserDetailsImpl;

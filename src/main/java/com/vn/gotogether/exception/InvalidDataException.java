@@ -1,4 +1,4 @@
-package com.vn.gotogether.error;
+package com.vn.gotogether.exception;
 
 public class InvalidDataException extends RuntimeException {
     public InvalidDataException(String message) {

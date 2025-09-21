@@ -2,6 +2,8 @@ package com.vn.gotogether.service.data;
 
 import com.vn.gotogether.dto.data.CreateItineraryItemRequest;
 import com.vn.gotogether.dto.data.CreateItineraryRequest;
+import com.vn.gotogether.dto.data.ItineraryDetailResponse;
+import com.vn.gotogether.dto.data.ItinerarySummaryResponse;
 import com.vn.gotogether.entity.*;
 import com.vn.gotogether.repository.data.ItineraryItemRepository;
 import com.vn.gotogether.repository.data.ItineraryRepository;
@@ -24,6 +26,56 @@ public class ItineraryService {
     private final ItineraryItemRepository itemRepo;
     private final PlaceRepository placeRepo;
     private final UserRepository userRepo;
+
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public List<ItinerarySummaryResponse> listByUser(String userId) {
+        var its = itineraryRepo.findByUser_IdOrderByCreatedAtDesc(userId);
+        return its.stream().map(it ->
+                ItinerarySummaryResponse.builder()
+                        .id(it.getId())
+                        .title(it.getTitle())
+                        .startDate(it.getStartDate())
+                        .endDate(it.getEndDate())
+                        .totalItems(itemRepo.countByItinerary_Id(it.getId()))
+                        .build()
+        ).toList();
+    }
+
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public ItineraryDetailResponse getItineraryDetail(String userId, String itineraryId) {
+        Itinerary it = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new IllegalArgumentException("Lịch trình không tồn tại"));
+
+        // chặn truy cập lịch trình của người khác
+        if (it.getUser() == null || !userId.equals(it.getUser().getId())) {
+            throw new IllegalArgumentException("Bạn không có quyền truy cập lịch trình này");
+        }
+
+        var items = itemRepo.findByItinerary_IdOrderByDayNumberAscOrderInDayAsc(itineraryId);
+
+        var itemDtos = items.stream().map(x ->
+                ItineraryDetailResponse.Item.builder()
+                        .id(x.getId())
+                        .placeId(x.getPlace().getId())
+                        .dayNumber(x.getDayNumber())
+                        .orderInDay(x.getOrderInDay())
+                        .startTime(x.getStartTime())
+                        .endTime(x.getEndTime())
+                        .description(x.getDescription())
+                        .estimatedCost(x.getEstimatedCost())
+                        .transportMode(x.getTransportMode() == null ? null : x.getTransportMode().name())
+                        .build()
+        ).toList();
+
+        return ItineraryDetailResponse.builder()
+                .id(it.getId())
+                .title(it.getTitle())
+                .startDate(it.getStartDate())
+                .endDate(it.getEndDate())
+                .items(itemDtos)
+                .build();
+    }
+
 
     @Transactional
     public String createItinerary(String userId, CreateItineraryRequest req) {

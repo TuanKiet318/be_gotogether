@@ -2,7 +2,7 @@ package com.vn.gotogether.config;
 
 
 import com.vn.gotogether.dto.ApiResponse;
-import com.vn.gotogether.error.ErrorResponse;
+import com.vn.gotogether.exception.ErrorResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.MethodParameter;

@@ -2,7 +2,7 @@ package com.vn.gotogether.config;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vn.gotogether.error.ErrorResponse;
+import com.vn.gotogether.exception.ErrorResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

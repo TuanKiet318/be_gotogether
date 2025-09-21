@@ -1,4 +1,4 @@
-package com.vn.gotogether.error;
+package com.vn.gotogether.exception;
 
 
 

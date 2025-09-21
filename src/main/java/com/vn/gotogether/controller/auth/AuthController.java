@@ -8,7 +8,7 @@ import com.vn.gotogether.dto.user.UserRegisterRequest;
 import com.vn.gotogether.dto.user.UserResponse;
 import com.vn.gotogether.entity.RefreshToken;
 import com.vn.gotogether.entity.User;
-import com.vn.gotogether.error.UnauthorizedException;
+import com.vn.gotogether.exception.UnauthorizedException;
 import com.vn.gotogether.service.auth.RefreshTokenService;
 import com.vn.gotogether.service.user.UserService;
 import com.vn.gotogether.utils.SecurityUtil;
@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 @RestController

@@ -2,16 +2,15 @@ package com.vn.gotogether.service.data;
 
 import com.vn.gotogether.dto.data.*;
 import com.vn.gotogether.entity.*;
-import com.vn.gotogether.repository.data.CategoryRepository;
-import com.vn.gotogether.repository.data.DestinationRepository;
-import com.vn.gotogether.repository.data.FoodRepository;
-import com.vn.gotogether.repository.data.PlaceRepository;
+import com.vn.gotogether.repository.data.*;
+import com.vn.gotogether.repository.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,15 +21,22 @@ public class DestinationService {
     private final CategoryRepository categoryRepository;
     private final PlaceRepository placeRepository;
     private final FoodRepository foodRepository;
+    private final FavoritePlaceRepository favoritePlaceRepository;
+    private final UserRepository userRepository;
+
 
     public DestinationService(DestinationRepository destinationRepository,
                               CategoryRepository categoryRepository,
                               PlaceRepository placeRepository,
-                              FoodRepository foodRepository) {
+                              FoodRepository foodRepository,
+                              FavoritePlaceRepository favoritePlaceRepository,
+                              UserRepository userRepository) {
         this.destinationRepository = destinationRepository;
         this.categoryRepository = categoryRepository;
         this.placeRepository = placeRepository;
         this.foodRepository = foodRepository;
+        this.favoritePlaceRepository = favoritePlaceRepository;
+        this.userRepository = userRepository;
     }
 
     public List<DestinationSummaryDto> getAllDestinations() {
@@ -68,7 +74,6 @@ public class DestinationService {
                 .categories(categories)
                 .build();
     }
-
     public PlacesResponseDto getPlacesByCategory(String destinationId, String categoryId) {
         Destination destination = destinationRepository.findById(destinationId)
                 .orElseThrow(() -> new EntityNotFoundException("Destination not found with id: " + destinationId));
@@ -77,9 +82,39 @@ public class DestinationService {
                 .orElseThrow(() -> new EntityNotFoundException("Category not found with id: " + categoryId));
 
         List<Place> places = placeRepository.findByDestinationAndCategory(destinationId, categoryId);
+        List<String> placeIds = places.stream().map(Place::getId).collect(Collectors.toList());
+
+        // Lấy user hiện tại (có thể null nếu chưa login)
+        String userId = currentUserIdOrNull();
+
+        // Batch maps (final để dùng trong lambda)
+        final Map<String, Boolean> favMap = buildFavoritedMap(userId, placeIds);
+        final Map<String, Long> favCountMap = buildFavoriteCountMap(placeIds);
+
         List<PlaceDto> placeDtos = places.stream()
-                .map(this::convertToPlaceDto)
+                .map(p -> {
+                    String mainImage = (p.getImages() == null)
+                            ? null
+                            : p.getImages().stream()
+                            .findFirst()
+                            .map(PlaceImage::getImageUrl)
+                            .orElse(null);
+
+                    return PlaceDto.builder()
+                            .id(p.getId())
+                            .name(p.getName())
+                            .lat(p.getLat())
+                            .lng(p.getLon()) // giữ nguyên lng
+                            .rating(p.getRating())
+                            .address(p.getAddress())
+                            .mainImage(mainImage)
+                            .description(p.getDescription())
+                            .favorited(favMap.getOrDefault(p.getId(), false))
+                            .favoriteCount(favCountMap.getOrDefault(p.getId(), 0L))
+                            .build();
+                })
                 .collect(Collectors.toList());
+
 
         return PlacesResponseDto.builder()
                 .category(CategoryDto.builder()
@@ -94,6 +129,56 @@ public class DestinationService {
                 .total(placeDtos.size())
                 .build();
     }
+//    public PlacesResponseDto getPlacesByCategory(String destinationId, String categoryId) {
+//        Destination destination = destinationRepository.findById(destinationId)
+//                .orElseThrow(() -> new EntityNotFoundException("Destination not found with id: " + destinationId));
+//
+//        Category category = categoryRepository.findById(categoryId)
+//                .orElseThrow(() -> new EntityNotFoundException("Category not found with id: " + categoryId));
+//
+//        List<Place> places = placeRepository.findByDestinationAndCategory(destinationId, categoryId);
+//        List<String> placeIds = places.stream().map(Place::getId).toList();
+//
+//        // Lấy user hiện tại (có thể null nếu chưa đăng nhập)
+//        String userId = currentUserIdOrNull();
+//
+//        // Batch: map placeId -> favorited / favoriteCount (dùng biến final để dùng trong lambda)
+//        final Map<String, Boolean> favMap = buildFavoritedMap(userId, placeIds);
+//        final Map<String, Long> favCountMap = buildFavoriteCountMap(placeIds);
+//
+//        List<PlaceDto> placeDtos = places.stream()
+//                .map(p -> {
+//                    String mainImage = (p.getImages() != null && !p.getImages().isEmpty())
+//                            ? p.getImages().get(0).getImageUrl()
+//                            : null;
+//                    return PlaceDto.builder()
+//                            .id(p.getId())
+//                            .name(p.getName())
+//                            .lat(p.getLat())
+//                            .lng(p.getLon()) // giữ nguyên lng
+//                            .rating(p.getRating())
+//                            .address(p.getAddress())
+//                            .mainImage(mainImage)
+//                            .description(p.getDescription())
+//                            .favorited(favMap.getOrDefault(p.getId(), false))
+//                            .favoriteCount(favCountMap.getOrDefault(p.getId(), 0L))
+//                            .build();
+//                })
+//                .toList();
+//
+//        return PlacesResponseDto.builder()
+//                .category(CategoryDto.builder()
+//                        .id(category.getId())
+//                        .name(category.getName())
+//                        .build())
+//                .destination(DestinationDto.builder()
+//                        .id(destination.getId())
+//                        .name(destination.getName())
+//                        .build())
+//                .places(placeDtos)
+//                .total(placeDtos.size())
+//                .build();
+//    }
 
     public FoodsResponseDto getFoodsByDestination(String destinationId) {
         Destination destination = destinationRepository.findById(destinationId)
@@ -126,15 +211,35 @@ public class DestinationService {
                 PageRequest.of(0, 6)
         );
 
+        // ===== Batch favorite: place chính + nearby
+        String userId = currentUserIdOrNull();
+
+        List<String> allIds = new java.util.ArrayList<>(nearbyPlaces.size() + 1);
+        allIds.add(place.getId());
+        allIds.addAll(nearbyPlaces.stream().map(Place::getId).toList());
+
+        final java.util.Map<String, Boolean> favMap = buildFavoritedMap(userId, allIds);
+        final java.util.Map<String, Long> favCountMap = buildFavoriteCountMap(allIds);
+
+        // map nearby kèm favorited/favoriteCount
         List<PlaceDto> nearbyDtos = nearbyPlaces.stream()
-                .map(this::convertToPlaceDto)
+                .map(p -> convertToPlaceDto(
+                        p,
+                        favMap.getOrDefault(p.getId(), false),
+                        favCountMap.getOrDefault(p.getId(), 0L)
+                ))
                 .toList();
 
-        PlaceDetailDto dto = convertToPlaceDetailDto(place);
+        // map place chính kèm favorited/favoriteCount
+        PlaceDetailDto dto = convertToPlaceDetailDto(
+                place,
+                favMap.getOrDefault(place.getId(), false),
+                favCountMap.getOrDefault(place.getId(), 0L)
+        );
         dto.setNearbyPlaces(nearbyDtos);
-
         return dto;
     }
+
 
 
     // Helper methods
@@ -229,7 +334,8 @@ public class DestinationService {
                 .build();
     }
 
-    private PlaceDto convertToPlaceDto(Place place) {
+    // Place list item + fav
+    private PlaceDto convertToPlaceDto(Place place, boolean favorited, long favoriteCount) {
         String mainImage = place.getImages().stream()
                 .findFirst()
                 .map(PlaceImage::getImageUrl)
@@ -239,37 +345,40 @@ public class DestinationService {
                 .id(place.getId())
                 .name(place.getName())
                 .lat(place.getLat())
-                .lng(place.getLon())
+                .lng(place.getLon()) // giữ nguyên lng
                 .rating(place.getRating())
                 .address(place.getAddress())
                 .mainImage(mainImage)
                 .description(place.getDescription())
+                .favorited(favorited)
+                .favoriteCount(favoriteCount)
                 .build();
     }
 
-    private PlaceDetailDto convertToPlaceDetailDto(Place place) {
-        List<ImageDto> images = place.getImages().stream()
+    // Place detail + fav
+    private PlaceDetailDto convertToPlaceDetailDto(Place place, boolean favorited, long favoriteCount) {
+        java.util.List<ImageDto> images = place.getImages().stream()
                 .map(img -> ImageDto.builder()
                         .id(img.getId())
                         .imageUrl(img.getImageUrl())
                         .build())
-                .collect(Collectors.toList());
-        
-        List<ReviewDto> reviews = place.getReviews().stream()
+                .toList();
+
+        java.util.List<ReviewDto> reviews = place.getReviews().stream()
                 .map(r -> ReviewDto.builder()
                         .id(r.getId())
                         .rating(r.getRating())
                         .comment(r.getComment())
                         .createdAt(r.getCreatedAt())
-                        .username(r.getUser().getName()) 
+                        .username(r.getUser().getName())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         return PlaceDetailDto.builder()
                 .id(place.getId())
                 .name(place.getName())
                 .lat(place.getLat())
-                .lng(place.getLon())
+                .lng(place.getLon()) // giữ nguyên lng
                 .description(place.getDescription())
                 .rating(place.getRating())
                 .address(place.getAddress())
@@ -284,9 +393,13 @@ public class DestinationService {
                         .name(place.getCategory().getName())
                         .build())
                 .images(images)
-                .reviews(reviews) 
+                .reviews(reviews)
+                // các field mới trong DTO detail:
+                .favorited(favorited)
+                .favoriteCount(favoriteCount)
                 .build();
     }
+
 
 
     private FoodDto convertToFoodDto(Food food) {
@@ -317,4 +430,36 @@ public class DestinationService {
                 .map(this::convertToSummaryDto)
                 .collect(Collectors.toList());
     }
+    private String currentUserIdOrNull() {
+        try {
+            var auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+                return null;
+            }
+            String email = auth.getName();
+            return userRepository.findByEmail(email).map(User::getId).orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Map<String, Boolean> buildFavoritedMap(String userId, List<String> placeIds) {
+        if (userId == null || placeIds == null || placeIds.isEmpty()) return java.util.Collections.emptyMap();
+        var likedIds = favoritePlaceRepository.findFavoritedPlaceIds(userId, placeIds);
+        var map = new java.util.HashMap<String, Boolean>((int) (likedIds.size() / 0.75) + 1);
+        for (String id : likedIds) map.put(id, true);
+        return map;
+    }
+
+    private Map<String, Long> buildFavoriteCountMap(List<String> placeIds) {
+        if (placeIds == null || placeIds.isEmpty()) return java.util.Collections.emptyMap();
+        var rows = favoritePlaceRepository.countByPlaceIds(placeIds); // List<Object[]>{ placeId, count }
+        var map = new java.util.HashMap<String, Long>((int) (rows.size() / 0.75) + 1);
+        for (Object[] r : rows) {
+            map.put((String) r[0], (Long) r[1]);
+        }
+        return map;
+    }
+
 }
