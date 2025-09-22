@@ -40,6 +40,10 @@ public class ItineraryInvite {
     @Column(length = 20, nullable = false)
     private Status status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private Role role; // EDITOR / VIEWER
+    public enum Role { EDITOR, VIEWER }
     public enum Status { PENDING, ACCEPTED, DECLINED, EXPIRED }
 
     @PrePersist

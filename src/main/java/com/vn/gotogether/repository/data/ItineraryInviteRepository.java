@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItineraryInviteRepository extends JpaRepository<ItineraryInvite, String> {
+    boolean existsByItineraryIdAndInviteEmail(String itineraryId, String inviteEmail);
+
     Optional<ItineraryInvite> findByInviteToken(String token);
-    List<ItineraryInvite> findByInviteEmailAndStatus(String email, ItineraryInvite.Status status);
+
     List<ItineraryInvite> findByItineraryId(String itineraryId);
 }

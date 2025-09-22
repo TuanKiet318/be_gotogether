@@ -1,13 +1,13 @@
 package com.vn.gotogether.controller.data;
 
-import com.vn.gotogether.dto.data.CreateItineraryRequest;
-import com.vn.gotogether.dto.data.ItineraryDetailResponse;
-import com.vn.gotogether.dto.data.ItineraryResponse;
-import com.vn.gotogether.dto.data.ItinerarySummaryResponse;
+import com.vn.gotogether.dto.data.*;
+import com.vn.gotogether.entity.ItineraryInvite;
 import com.vn.gotogether.entity.User;
 import com.vn.gotogether.exception.InvalidDataException;
+import com.vn.gotogether.exception.UnauthorizedException;
 import com.vn.gotogether.repository.data.ItineraryItemRepository;
 import com.vn.gotogether.repository.user.UserRepository;
+import com.vn.gotogether.service.data.ItineraryInviteService;
 import com.vn.gotogether.service.data.ItineraryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -25,6 +27,8 @@ public class ItineraryController {
     private final ItineraryService itineraryService;
     private final ItineraryItemRepository itemRepo;
     private final UserRepository userRepository;
+    private final ItineraryInviteService inviteService;
+    private final UserRepository userRepo;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -62,5 +66,35 @@ public class ItineraryController {
 
         return itineraryService.getItineraryDetail(user.getId(), id);
     }
+    @GetMapping("/invites/{token}")
+    public InviteResponseDto getInviteByToken(@PathVariable String token) {
+            var invite = inviteService.getInviteByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invite not found or expired"));
+        return InviteResponseDto.fromEntity(invite);
+    }
+    @PostMapping("/invites/accept")
+    public InviteResponseDto acceptInvite(
+            @RequestParam String token,
+            @RequestBody InviteActionRequestDto dto) {
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = null;
+
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            currentUser = userRepo.findById(auth.getName())
+                    .orElseThrow(() -> new UnauthorizedException("User không tồn tại"));
+        }
+
+        try {
+            // Chuyển currentUser = null nếu chưa login
+            ItineraryInvite updatedInvite = inviteService.acceptOrDeclineInvite(token, currentUser, dto.getStatus());
+            return InviteResponseDto.fromEntity(updatedInvite);
+        } catch (UnauthorizedException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+        } catch (InvalidDataException e) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
 }
