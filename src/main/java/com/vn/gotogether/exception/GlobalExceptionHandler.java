@@ -111,7 +111,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({UnauthorizedException.class, AccessDeniedException.class})
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ErrorResponse handleUnauthorized(WebRequest request, UnauthorizedException e) {
+    public ErrorResponse handleUnauthorized( UnauthorizedException e, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(request.getDescription(false).replace("uri=", ""));

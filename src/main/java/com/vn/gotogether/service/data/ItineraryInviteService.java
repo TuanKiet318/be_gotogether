@@ -108,14 +108,14 @@ public class ItineraryInviteService {
             user = currentUser;
             // Kiểm tra user có phải người được mời không
             if (!invite.getInviteEmail().equals(user.getEmail())) {
-                throw new InvalidDataException("User không được phép tham gia lịch trình này");
+                throw new UnauthorizedException("User không được phép tham gia lịch trình này");
             }
         } else {
             // Chưa login
             throw new UnauthorizedException("Bạn cần đăng nhập để thực hiện hành động này");
         }
 
-        if ("ACCEPT".equalsIgnoreCase(action)) {
+        if ("ACCEPTED".equalsIgnoreCase(action)) {
             invite.setStatus(ItineraryInvite.Status.ACCEPTED);
 
             // tạo collaborator nếu chưa tồn tại
@@ -133,7 +133,7 @@ public class ItineraryInviteService {
                 collaboratorRepo.save(collaborator);
             }
 
-        } else if ("DECLINE".equalsIgnoreCase(action)) {
+        } else if ("DECLINED".equalsIgnoreCase(action)) {
             invite.setStatus(ItineraryInvite.Status.DECLINED);
         } else {
             throw new RuntimeException("Hành động không hợp lệ");

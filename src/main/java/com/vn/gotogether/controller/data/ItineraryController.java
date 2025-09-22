@@ -81,8 +81,10 @@ public class ItineraryController {
         User currentUser = null;
 
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            currentUser = userRepo.findById(auth.getName())
+
+            currentUser = userRepo.findByEmail(auth.getName())
                     .orElseThrow(() -> new UnauthorizedException("User không tồn tại"));
+
         }
 
         try {
