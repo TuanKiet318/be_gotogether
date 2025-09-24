@@ -31,6 +31,9 @@ public class User {
     @Column(nullable = false)
     String name;
 
+    @Column(name = "avatar", length = 500)
+    String avatar;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     Role role;
@@ -62,7 +65,7 @@ public class User {
     void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        active = true;
+        active = false;
     }
 
     @PreUpdate
@@ -74,6 +77,5 @@ public class User {
         this.password = password;
         this.passwordUpdatedAt = LocalDateTime.now();
     }
-
-
 }
+

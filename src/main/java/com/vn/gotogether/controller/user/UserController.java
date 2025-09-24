@@ -21,6 +21,11 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
 
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser() {
+        return ResponseEntity.ok(userService.getUserInformation());
+    }
+
     @PostMapping("/register")
     public ResponseEntity<UserResponse> registerUser(@RequestBody UserRegisterRequest request, Authentication authentication) {
         boolean isAdmin = authentication.getAuthorities().stream()

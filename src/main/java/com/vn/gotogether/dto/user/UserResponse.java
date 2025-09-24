@@ -16,6 +16,7 @@ public class UserResponse {
     String name;
     String email;
     String role;
+    String avatar;
     LocalDateTime lastLogin;
     LocalDateTime previousLogin;
     LocalDateTime createdAt;

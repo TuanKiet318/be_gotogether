@@ -10,6 +10,7 @@ import com.vn.gotogether.entity.User;
 import com.vn.gotogether.exception.InvalidDataException;
 import com.vn.gotogether.repository.user.RoleRepository;
 import com.vn.gotogether.repository.user.UserRepository;
+import com.vn.gotogether.service.OtpService;
 import com.vn.gotogether.utils.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -72,8 +73,10 @@ public class UserService implements UserDetailsService {
                 .updatedAt(LocalDateTime.now())
                 .lastLogin(null)
                 .previousLogin(null)
+                .active(false)
                 .build();
         newUser = userRepository.save(newUser);
+
         return UserResponse.builder()
                 .id(newUser.getId())
                 .email(newUser.getEmail())
@@ -82,6 +85,7 @@ public class UserService implements UserDetailsService {
                 .createdAt(newUser.getCreatedAt())
                 .lastLogin(newUser.getLastLogin())
                 .createdAt(newUser.getCreatedAt())
+                .active(newUser.isActive())
                 .build();
     }
 
@@ -107,6 +111,7 @@ public class UserService implements UserDetailsService {
                     .updatedAt(LocalDateTime.now())
                     .lastLogin(null)
                     .previousLogin(null)
+                    .active(false)
                     .build();
             newUser = userRepository.save(newUser);
             return UserResponse.builder()
@@ -117,6 +122,7 @@ public class UserService implements UserDetailsService {
                     .createdAt(newUser.getCreatedAt())
                     .lastLogin(newUser.getLastLogin())
                     .createdAt(newUser.getCreatedAt())
+                    .active(newUser.isActive())
                     .build();
         }
         return null;
@@ -141,6 +147,7 @@ public class UserService implements UserDetailsService {
                 .previousLogin(user.getPreviousLogin())
                 .createdAt(user.getCreatedAt())
                 .passwordUpdatedAt(user.getPasswordUpdatedAt())
+                .avatar(user.getAvatar())
                 .build();
     }
 
