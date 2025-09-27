@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -46,5 +47,8 @@ public class Place {
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<PlaceReview> reviews;
+
+    @ManyToMany(mappedBy = "places")
+    private List<Food> foods = new ArrayList<>();
 
 }

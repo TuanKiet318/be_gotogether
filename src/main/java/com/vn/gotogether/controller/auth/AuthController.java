@@ -3,6 +3,7 @@ package com.vn.gotogether.controller.auth;
 
 
 import com.vn.gotogether.dto.ApiResponse;
+import com.vn.gotogether.dto.OtpRequest;
 import com.vn.gotogether.dto.auth.LoginDto;
 import com.vn.gotogether.dto.user.UserRegisterRequest;
 import com.vn.gotogether.dto.user.UserResponse;
@@ -175,14 +176,16 @@ public class AuthController {
 
 
     @PostMapping("/send-otp")
-    public ResponseEntity<String> sendOtp(@RequestParam String userId, @RequestParam String email) {
-        otpService.sendOtp(userId, email);
+    public ResponseEntity<String> sendOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        otpService.sendOtp(email);
         return ResponseEntity.ok("OTP đã gửi tới email");
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<Boolean> verifyOtp(@RequestParam String userId, @RequestParam String otp) {
-        boolean valid = otpService.validateOtp(userId, otp);
+    public ResponseEntity<Boolean> verifyOtp(@RequestBody OtpRequest request) {
+        boolean valid = otpService.validateOtp(request.getUserId(), request.getOtp());
         return ResponseEntity.ok(valid);
     }
+
 }

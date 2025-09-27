@@ -4,6 +4,7 @@ import com.vn.gotogether.entity.User;
 import com.vn.gotogether.entity.UserOtp;
 import com.vn.gotogether.repository.user.UserOtpRepository;
 import com.vn.gotogether.repository.user.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +19,14 @@ public class OtpService {
     private final EmailService emailService;
     private final UserRepository userRepository; // ✅ thêm repository user
 
-    public void sendOtp(String userId, String email) {
+    @Transactional
+    public void sendOtp(String email) {
+        // tìm user theo email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với email: " + email));
+
         // xóa OTP cũ (nếu có)
-        otpRepository.deleteByUserId(userId);
+        otpRepository.deleteByUserId(user.getId());
 
         // generate OTP
         String otp = String.valueOf((int) ((Math.random() * 900000) + 100000)); // 6 số
@@ -28,17 +34,20 @@ public class OtpService {
         // save to DB
         UserOtp userOtp = UserOtp.builder()
                 .id(UUID.randomUUID().toString())
-                .userId(userId)
+                .userId(user.getId())
                 .otpCode(otp)
-                .expiryTime(LocalDateTime.now().plusMinutes(5)) // hết hạn sau 5 phút
+                .expiryTime(LocalDateTime.now().plusMinutes(5))
                 .build();
         otpRepository.save(userOtp);
 
         // gửi email
         String subject = "Mã OTP xác nhận";
-        String body = "<p>Xin chào,</p><p>Mã OTP của bạn là: <b>" + otp + "</b></p><p>Có hiệu lực trong 5 phút.</p>";
+        String body = "<p>Xin chào " + user.getName() + ",</p>"
+                + "<p>Mã OTP của bạn là: <b>" + otp + "</b></p>"
+                + "<p>Có hiệu lực trong 5 phút.</p>";
         emailService.sendEmail(email, subject, body);
     }
+
 
     public boolean validateOtp(String userId, String otp) {
         Optional<UserOtp> opt = otpRepository.findByUserIdAndOtpCode(userId, otp);
