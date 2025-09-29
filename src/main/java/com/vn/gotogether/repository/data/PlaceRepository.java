@@ -72,4 +72,5 @@ public interface PlaceRepository extends JpaRepository<Place, String> {
             @Param("placeId") String placeId,
             Pageable pageable);
 
+
 }

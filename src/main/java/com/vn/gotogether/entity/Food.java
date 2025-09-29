@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -31,20 +34,35 @@ public class Food {
     @JoinColumn(name = "destination_id", referencedColumnName = "id")
     private Destination destination;
 
-    public Food(String name, String description, String imageUrl, Destination destination) {
+    @Column(name = "content", columnDefinition = "JSON")
+    private String content;
+
+    @ManyToMany
+    @JoinTable(
+            name = "food_place",
+            joinColumns = @JoinColumn(name = "food_id"),
+            inverseJoinColumns = @JoinColumn(name = "place_id")
+    )
+    private List<Place> places = new ArrayList<>();
+
+    public Food(String name, String description, String imageUrl, Destination destination, String content, List<Place> places) {
         this.name = name;
         this.description = description;
         this.imageUrl = imageUrl;
         this.destination = destination;
+        this.content = content;
+        this.places = places;
     }
 
     @Builder
-    public Food(String id, String name, String description, String imageUrl, Destination destination) {
+    public Food(String id, String name, String description, String imageUrl, Destination destination, String content, List<Place> places) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.imageUrl = imageUrl;
         this.destination = destination;
+        this.content = content;
+        this.places = places;
     }
 
     @Override

@@ -3,12 +3,14 @@ package com.vn.gotogether.controller.auth;
 
 
 import com.vn.gotogether.dto.ApiResponse;
+import com.vn.gotogether.dto.OtpRequest;
 import com.vn.gotogether.dto.auth.LoginDto;
 import com.vn.gotogether.dto.user.UserRegisterRequest;
 import com.vn.gotogether.dto.user.UserResponse;
 import com.vn.gotogether.entity.RefreshToken;
 import com.vn.gotogether.entity.User;
 import com.vn.gotogether.exception.UnauthorizedException;
+import com.vn.gotogether.service.OtpService;
 import com.vn.gotogether.service.auth.RefreshTokenService;
 import com.vn.gotogether.service.user.UserService;
 import com.vn.gotogether.utils.SecurityUtil;
@@ -34,7 +36,7 @@ import java.util.UUID;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
+    private final OtpService otpService;
     private final SecurityUtil securityUtil;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final UserService userService;
@@ -167,10 +169,23 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@RequestBody UserRegisterRequest request) {
-        // ép role mặc định là ROLE_USER
         request.setRoleName("ROLE_USER");
         UserResponse response = userService.registerUser(request);
         return ResponseEntity.ok(response);
+    }
+
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<String> sendOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        otpService.sendOtp(email);
+        return ResponseEntity.ok("OTP đã gửi tới email");
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<Boolean> verifyOtp(@RequestBody OtpRequest request) {
+        boolean valid = otpService.validateOtp(request.getUserId(), request.getOtp());
+        return ResponseEntity.ok(valid);
     }
 
 }

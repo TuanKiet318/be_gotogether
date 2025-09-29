@@ -1,11 +1,16 @@
 package com.vn.gotogether.service.data;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vn.gotogether.dto.data.*;
 import com.vn.gotogether.entity.*;
+import com.vn.gotogether.model.ContentItem;
 import com.vn.gotogether.repository.data.*;
 import com.vn.gotogether.repository.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,13 +21,15 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 public class DestinationService {
-
+    @Autowired
+    private ObjectMapper objectMapper;
     private final DestinationRepository destinationRepository;
     private final CategoryRepository categoryRepository;
     private final PlaceRepository placeRepository;
     private final FoodRepository foodRepository;
     private final FavoritePlaceRepository favoritePlaceRepository;
     private final UserRepository userRepository;
+    private final FoodPlaceRepository foodPlaceRepository;
 
 
     public DestinationService(DestinationRepository destinationRepository,
@@ -30,13 +37,14 @@ public class DestinationService {
                               PlaceRepository placeRepository,
                               FoodRepository foodRepository,
                               FavoritePlaceRepository favoritePlaceRepository,
-                              UserRepository userRepository) {
+                              UserRepository userRepository, FoodPlaceRepository foodPlaceRepository) {
         this.destinationRepository = destinationRepository;
         this.categoryRepository = categoryRepository;
         this.placeRepository = placeRepository;
         this.foodRepository = foodRepository;
         this.favoritePlaceRepository = favoritePlaceRepository;
         this.userRepository = userRepository;
+        this.foodPlaceRepository = foodPlaceRepository;
     }
 
     public List<DestinationSummaryDto> getAllDestinations() {
@@ -401,15 +409,6 @@ public class DestinationService {
     }
 
 
-
-    private FoodDto convertToFoodDto(Food food) {
-        return FoodDto.builder()
-                .id(food.getId())
-                .name(food.getName())
-                .description(food.getDescription())
-                .imageUrl(food.getImageUrl())
-                .build();
-    }
     public List<CategoryDto> getAllCategories() {
         List<Category> categories = categoryRepository.findAllOrderByName();
         return categories.stream()
@@ -462,4 +461,88 @@ public class DestinationService {
         return map;
     }
 
+    private FoodDto convertToFoodDto(Food food) {
+        List<ContentItem> contentItems = null;
+        if (food.getContent() != null) {
+            try {
+                contentItems = objectMapper.readValue(
+                        food.getContent(),
+                        new TypeReference<List<ContentItem>>() {}
+                );
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Error parsing food content JSON", e);
+            }
+        }
+
+        return FoodDto.builder()
+                .id(food.getId())
+                .name(food.getName())
+                .description(food.getDescription())
+                .imageUrl(food.getImageUrl())
+                .content(contentItems)
+                .build();
+    }
+
+    public FoodDto getFoodDetail(String id) {
+        Food food = foodRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Food not found with id: " + id));
+        return convertToFoodDto(food);
+    }
+
+    public PlacesResponseDto getRestaurantsByFood(String foodId) {
+        Food food = foodRepository.findById(foodId)
+                .orElseThrow(() -> new EntityNotFoundException("Food not found with id: " + foodId));
+
+        // Lấy danh sách places có liên kết food này và category = restaurant
+        List<Place> places = foodPlaceRepository.findRestaurantsByFoodId(foodId);
+
+        List<String> placeIds = places.stream()
+                .map(Place::getId)
+                .collect(Collectors.toList());
+
+        // User hiện tại (có thể null nếu chưa login)
+        String userId = currentUserIdOrNull();
+
+        // batch maps
+        final Map<String, Boolean> favMap = buildFavoritedMap(userId, placeIds);
+        final Map<String, Long> favCountMap = buildFavoriteCountMap(placeIds);
+
+        // Map entity → dto
+        List<PlaceDto> placeDtos = places.stream()
+                .map(p -> {
+                    String mainImage = (p.getImages() == null)
+                            ? null
+                            : p.getImages().stream()
+                            .findFirst()
+                            .map(PlaceImage::getImageUrl)
+                            .orElse(null);
+
+                    return PlaceDto.builder()
+                            .id(p.getId())
+                            .name(p.getName())
+                            .lat(p.getLat())
+                            .lng(p.getLon()) // giữ nguyên
+                            .rating(p.getRating())
+                            .address(p.getAddress())
+                            .mainImage(mainImage)
+                            .description(p.getDescription())
+                            .favorited(favMap.getOrDefault(p.getId(), false))
+                            .favoriteCount(favCountMap.getOrDefault(p.getId(), 0L))
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return PlacesResponseDto.builder()
+                .category(CategoryDto.builder()
+                        .id("restaurant")   // fix cứng category restaurant
+                        .name("Nhà hàng")
+                        .build())
+                .destination(DestinationDto.builder()
+                        .id(food.getDestination().getId())
+                        .name(food.getDestination().getName())
+                        .build())
+                .places(placeDtos)
+                .total(placeDtos.size())
+                .build();
+    }
 }

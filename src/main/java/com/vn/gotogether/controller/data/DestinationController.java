@@ -2,6 +2,7 @@ package com.vn.gotogether.controller.data;
 
 import com.vn.gotogether.dto.ApiResponse;
 import com.vn.gotogether.dto.data.*;
+import com.vn.gotogether.entity.Food;
 import com.vn.gotogether.service.data.DestinationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -119,5 +120,15 @@ public class DestinationController {
         } catch (Exception e) {
             return ApiResponse.error(500, "Internal server error: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/foods/{id}")
+    public ResponseEntity<FoodDto> getFoodDetail(@PathVariable String id) {
+        return ResponseEntity.ok(destinationService.getFoodDetail(id));
+    }
+
+    @GetMapping("foods/{foodId}/restaurants")
+    public ResponseEntity<PlacesResponseDto> getRestaurantsByFood(@PathVariable String foodId) {
+        return ResponseEntity.ok(destinationService.getRestaurantsByFood(foodId));
     }
 }
