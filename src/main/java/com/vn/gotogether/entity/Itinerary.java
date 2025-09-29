@@ -32,6 +32,10 @@
         @Column(nullable = false)
         private Instant updatedAt;
 
+        @Column(nullable = false)
+        private boolean isFeatured = false;
+
+
         // Nếu muốn giữ danh sách điểm “yêu thích” nhanh thì để lại,
         // còn chuẩn hóa thì có thể bỏ vì đã có ItineraryItem -> Place.
         @ManyToMany
