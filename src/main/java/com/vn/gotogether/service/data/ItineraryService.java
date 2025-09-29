@@ -10,6 +10,8 @@ import com.vn.gotogether.repository.user.UserRepository;
 import com.vn.gotogether.service.data.PermissionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -452,4 +454,29 @@ public class ItineraryService {
             throw new InvalidDataException("transportMode không hợp lệ. Hợp lệ: WALK, BIKE, CAR, BUS, TRAIN, FLIGHT, BOAT");
         }
     }
+
+    public List<ItinerarySummaryResponse> getFeaturedItineraries(String destinationId, int limit) {
+        return itineraryRepo.findFeaturedByDestination(destinationId, PageRequest.of(0, limit))
+                .stream()
+                .map(i -> ItinerarySummaryResponse.builder()
+                        .id(i.getId())
+                        .title(i.getTitle())
+                        .startDate(i.getStartDate())
+                        .endDate(i.getEndDate())
+                        .totalItems(i.getItems().size())
+                        .build())
+                .toList();
+    }
+
+    public Page<ItinerarySummaryResponse> getAllItineraries(String destinationId, int page, int size) {
+        return itineraryRepo.findAllByDestination(destinationId, PageRequest.of(page, size))
+                .map(i -> ItinerarySummaryResponse.builder()
+                        .id(i.getId())
+                        .title(i.getTitle())
+                        .startDate(i.getStartDate())
+                        .endDate(i.getEndDate())
+                        .totalItems(i.getItems().size())
+                        .build());
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.vn.gotogether.controller.data;
 
 import com.vn.gotogether.dto.data.*;
+import com.vn.gotogether.entity.Itinerary;
 import com.vn.gotogether.entity.ItineraryInvite;
 import com.vn.gotogether.entity.User;
 import com.vn.gotogether.exception.InvalidDataException;
@@ -11,6 +12,7 @@ import com.vn.gotogether.service.data.ItineraryInviteService;
 import com.vn.gotogether.service.data.ItineraryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -97,4 +99,19 @@ public class ItineraryController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
+
+    @GetMapping("/by-destination/{destinationId}/featured")
+    public List<ItinerarySummaryResponse> getFeaturedItineraries(@PathVariable String destinationId) {
+        return itineraryService.getFeaturedItineraries(destinationId, 5);
+    }
+
+    @GetMapping("/by-destination/{destinationId}")
+    public Page<ItinerarySummaryResponse> getAllItineraries(
+            @PathVariable String destinationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return itineraryService.getAllItineraries(destinationId, page, size);
+    }
+
+
 }
