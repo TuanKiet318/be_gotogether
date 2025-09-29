@@ -29,6 +29,24 @@ public class ItineraryInviteService {
     private final ItineraryCollaboratorRepository collaboratorRepo;
     private final SimpleEmailService emailService;
 
+    public void sendInviteEmailOnly(ItineraryInvite invite) {
+        String inviterName = invite.getInviter().getName();
+        String inviterEmail = invite.getInviter().getEmail();
+        String role = invite.getRole().name();
+
+        String link = "http://localhost:5173/invite?token=" + invite.getInviteToken();
+
+        String subject = inviterName + " đã mời bạn tham gia lịch trình";
+        String body = "<p>" + inviterName + " (" + inviterEmail + ") đã mời bạn tham gia lịch trình: <strong>"
+                + invite.getItinerary().getTitle() + "</strong></p>"
+                + "<p>Vai trò của bạn trong lịch trình: <strong>" + role + "</strong></p>"
+                + "<p>Nhấn vào đây để chấp nhận lời mời: <a href=\"" + link + "\">Tham gia</a></p>"
+                + "<p>Lời mời này sẽ hết hạn vào: " + invite.getExpiresAt() + "</p>";
+
+        emailService.sendEmail(invite.getInviteEmail(), subject, body);
+    }
+
+
     @Transactional
     public ItineraryInvite sendInvite(String inviterId, InviteRequestDto dto) {
         var itinerary = itineraryRepo.findById(dto.getItineraryId())
@@ -63,7 +81,7 @@ public class ItineraryInviteService {
         String inviteRole = invite.getRole().name();
 
 // Link chấp nhận lời mời
-        String link = "http://your-frontend.com/invite?token=" + invite.getInviteToken();
+        String link = "http://localhost:5173/invite?token=" + invite.getInviteToken();
 
 // Nội dung email mới
         String subject = inviterName + " đã mời bạn tham gia lịch trình";

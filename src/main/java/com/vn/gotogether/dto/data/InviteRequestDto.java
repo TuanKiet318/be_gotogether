@@ -6,7 +6,6 @@ import lombok.*;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class InviteRequestDto {
-    @NotBlank
     private String itineraryId;
 
     @NotBlank @Email

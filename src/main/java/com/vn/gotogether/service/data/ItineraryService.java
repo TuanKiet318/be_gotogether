@@ -3,6 +3,7 @@ package com.vn.gotogether.service.data;
 import com.vn.gotogether.dto.data.*;
 import com.vn.gotogether.entity.*;
 import com.vn.gotogether.exception.InvalidDataException;
+import com.vn.gotogether.repository.data.ItineraryInviteRepository;
 import com.vn.gotogether.repository.data.ItineraryItemRepository;
 import com.vn.gotogether.repository.data.ItineraryRepository;
 import com.vn.gotogether.repository.data.PlaceRepository;
@@ -10,9 +11,13 @@ import com.vn.gotogether.repository.user.UserRepository;
 import com.vn.gotogether.service.data.PermissionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -21,6 +26,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ItineraryService {
 
     private final ItineraryRepository itineraryRepo;
@@ -28,6 +34,8 @@ public class ItineraryService {
     private final PlaceRepository placeRepo;
     private final UserRepository userRepo;
     private final PermissionService permissionService;
+    private final ItineraryInviteService inviteService;
+    private final ItineraryInviteRepository inviteRepo;
 
     @Transactional(Transactional.TxType.SUPPORTS)
     public List<ItinerarySummaryResponse> listByUser(String userId) {
@@ -78,9 +86,10 @@ public class ItineraryService {
                 .build();
     }
 
-    // ====== CREATE ITINERARY ======
+    // ====== CREATE ITINERARY (FINAL) ======
     @Transactional
     public String createItinerary(String userId, CreateItineraryRequest req) {
+        // 1) Validate cơ bản
         if (req.getStartDate() == null || req.getEndDate() == null || req.getStartDate().isAfter(req.getEndDate())) {
             throw new IllegalArgumentException("Ngày bắt đầu/kết thúc không hợp lệ");
         }
@@ -88,6 +97,7 @@ public class ItineraryService {
             throw new IllegalArgumentException("Tiêu đề không được để trống");
         }
 
+        // 2) Lấy user & lưu Itinerary
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User không tồn tại"));
 
@@ -99,6 +109,7 @@ public class ItineraryService {
                 .build();
         itin = itineraryRepo.save(itin);
 
+        // 3) Lưu các item (nếu có)
         long days = ChronoUnit.DAYS.between(req.getStartDate(), req.getEndDate()) + 1;
 
         if (req.getItems() != null && !req.getItems().isEmpty()) {
@@ -139,8 +150,60 @@ public class ItineraryService {
             itemRepo.saveAll(toSave);
         }
 
-        return itin.getId();
+        // 4) Lưu INVITES
+        final String itineraryId = itin.getId(); // ✅ THÊM DÒNG NÀY
+        final List<CreateItineraryRequest.InviteBody> invites = req.getInvites(); // ✅ THÊM DÒNG NÀY
+        final List<ItineraryInvite> savedInvites = new ArrayList<>();
+
+        if (invites != null && !invites.isEmpty()) {
+            for (CreateItineraryRequest.InviteBody ib : invites) {
+                try {
+                    String email = ib.getInviteEmail() == null ? null : ib.getInviteEmail().trim().toLowerCase();
+                    if (email == null || email.isBlank()) continue;
+
+                    if (user.getEmail() != null && user.getEmail().equalsIgnoreCase(email)) continue;
+
+                    ItineraryInvite.Role role = (ib.getRole() == null)
+                            ? ItineraryInvite.Role.EDITOR
+                            : ItineraryInvite.Role.valueOf(ib.getRole().trim().toUpperCase());
+
+                    ItineraryInvite invite = ItineraryInvite.builder()
+                            .itinerary(itin)
+                            .inviter(user)
+                            .inviteEmail(email)
+                            .inviteToken(UUID.randomUUID().toString().replace("-", ""))
+                            .createdAt(Instant.now())
+                            .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                            .status(ItineraryInvite.Status.PENDING)
+                            .role(role)
+                            .build();
+
+                    inviteRepo.save(invite);
+                    savedInvites.add(invite);
+                } catch (Exception ex) {
+                    log.warn("Skipping invite for {} due to {}", ib.getInviteEmail(), ex.getMessage());
+                }
+            }
+
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    for (ItineraryInvite inv : savedInvites) {
+                        try {
+                            inviteService.sendInviteEmailOnly(inv);
+                        } catch (Exception ex) {
+                            log.warn("Failed to send email to {}: {}", inv.getInviteEmail(), ex.getMessage());
+                        }
+                    }
+                }
+            });
+        }
+
+        // 5) Return
+        return itineraryId;
     }
+
+
 
     // ================== Item CRUD / Import ==================
 
