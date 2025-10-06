@@ -1,10 +1,7 @@
 package com.vn.gotogether.controller.user;
 
 
-import com.vn.gotogether.dto.user.ChangePasswordRequest;
-import com.vn.gotogether.dto.user.UserRegisterRequest;
-import com.vn.gotogether.dto.user.UserResponse;
-import com.vn.gotogether.dto.user.UserUpdateRequest;
+import com.vn.gotogether.dto.user.*;
 import com.vn.gotogether.service.user.UserService;
 import com.vn.gotogether.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -71,5 +68,10 @@ public class UserController {
     public ResponseEntity<Void> ping() {
         SecurityUtil.getCurrentUserLogin().ifPresent(userService::updateLastActivity);
         return ResponseEntity.ok().build();
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        userService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok("Mật khẩu mới đã được gửi vào email của bạn.");
     }
 }

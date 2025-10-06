@@ -21,6 +21,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,40 @@ public class UserService implements UserDetailsService {
    @Autowired
     private  PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private OtpService otpService; // Dùng gửi email
+
+    // =================== Tính năng quên mật khẩu ===================
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidDataException("Email không tồn tại trong hệ thống"));
+
+        // 1. Tạo mật khẩu mới ngẫu nhiên
+        String newPassword = generateRandomPassword(10);
+
+        // 2. Mã hóa và lưu vào DB
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // 3. Gửi email mật khẩu mới
+        String subject = "Mật khẩu mới của bạn";
+        String body = "Mật khẩu mới của bạn là: " + newPassword + "\nHãy đăng nhập và đổi lại mật khẩu!";
+        otpService.sendEmail(email, subject, body);
+    }
+
+    // Hàm tạo mật khẩu ngẫu nhiên
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        StringBuilder sb = new StringBuilder();
+        SecureRandom random = new SecureRandom();
+
+        for (int i = 0; i < length; i++) {
+            int index = random.nextInt(chars.length());
+            sb.append(chars.charAt(index));
+        }
+
+        return sb.toString();
+    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
