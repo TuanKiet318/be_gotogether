@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -57,6 +58,7 @@ public class ItineraryController {
         return itineraryService.listByUser(user.getId());
     }
 
+
     // ====== GET DETAIL: chi tiết 1 lịch trình (kèm items) ======
     @GetMapping("/{id}")
     public ItineraryDetailResponse getOne(@PathVariable("id") String id) {
@@ -68,6 +70,13 @@ public class ItineraryController {
 
         return itineraryService.getItineraryDetail(user.getId(), id);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteItinerary(@PathVariable String id, Authentication authentication) {
+        itineraryService.deleteItineraryForUser(id, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/invites/{token}")
     public InviteResponseDto getInviteByToken(@PathVariable String token) {
             var invite = inviteService.getInviteByToken(token)

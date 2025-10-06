@@ -59,4 +59,7 @@ public interface ItineraryItemRepository extends JpaRepository<ItineraryItem, St
 
     // Ràng buộc vị trí: tiện check uniqueness nếu bạn thêm unique ở DB
     boolean existsByItinerary_IdAndDayNumberAndOrderInDay(String itineraryId, Integer dayNumber, Integer orderInDay);
+
+    void deleteAllByItinerary_Id(String itineraryId);
+
 }
