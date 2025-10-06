@@ -183,6 +183,8 @@ public class UserService implements UserDetailsService {
                 .createdAt(user.getCreatedAt())
                 .passwordUpdatedAt(user.getPasswordUpdatedAt())
                 .avatar(user.getAvatar())
+                .online(true)
+                .active(user.isActive())
                 .build();
     }
 
