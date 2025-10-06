@@ -5,6 +5,7 @@ import com.vn.gotogether.entity.*;
 import com.vn.gotogether.exception.InvalidDataException;
 import com.vn.gotogether.repository.data.*;
 import com.vn.gotogether.repository.user.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -272,4 +273,28 @@ public class ItineraryService {
             throw new IllegalArgumentException("transportMode không hợp lệ. Hợp lệ: WALK, BIKE, CAR, BUS, TRAIN, FLIGHT, BOAT");
         }
     }
+
+    @Transactional
+    public void deleteItineraryForUser(String itineraryId, String userEmail) {
+        // Lấy itinerary
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new EntityNotFoundException("Itinerary not found"));
+
+        // Lấy user hiện tại
+        User user = userRepo.findByEmail(userEmail)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        // Kiểm tra quyền sở hữu
+        if (!itinerary.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("You are not allowed to delete this itinerary");
+        }
+
+        // Xóa toàn bộ items trước (tránh lỗi constraint)
+        itemRepo.deleteAllByItinerary_Id(itineraryId);
+
+
+        // Xóa itinerary
+        itineraryRepo.delete(itinerary);
+    }
+
 }
