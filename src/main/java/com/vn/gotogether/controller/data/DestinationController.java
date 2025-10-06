@@ -6,6 +6,7 @@ import com.vn.gotogether.entity.Food;
 import com.vn.gotogether.service.data.DestinationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -131,4 +132,37 @@ public class DestinationController {
     public ResponseEntity<PlacesResponseDto> getRestaurantsByFood(@PathVariable String foodId) {
         return ResponseEntity.ok(destinationService.getRestaurantsByFood(foodId));
     }
+
+    @GetMapping("/by-destination/{destinationId}/places")
+    public ApiResponse<Page<PlaceDto>> getPlacesByDestination(
+            @PathVariable String destinationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDirection
+    ) {
+        try {
+            Page<PlaceDto> places = destinationService.getPlacesByDestination(
+                    destinationId, page, size, sortBy, sortDirection
+            );
+            return ApiResponse.success(places);
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/destinations/{destinationId}/places/search")
+    public ApiResponse<PlacesResponseDto> searchPlacesInDestination(
+            @PathVariable String destinationId,
+            @RequestParam(value = "q", required = false) String keyword) {
+        try {
+            PlacesResponseDto response = destinationService.searchPlacesInDestination(destinationId, keyword);
+            return ApiResponse.success(response);
+        } catch (EntityNotFoundException e) {
+            return ApiResponse.error(404, e.getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
+
 }

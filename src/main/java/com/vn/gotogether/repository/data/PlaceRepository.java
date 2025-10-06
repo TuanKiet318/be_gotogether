@@ -72,5 +72,26 @@ public interface PlaceRepository extends JpaRepository<Place, String> {
             @Param("placeId") String placeId,
             Pageable pageable);
 
+    @Query("SELECT p FROM Place p " +
+            "LEFT JOIN FETCH p.images " +
+            "LEFT JOIN FETCH p.category " +
+            "WHERE p.destination.id = :destinationId")
+    Page<Place> findAllByDestination(@Param("destinationId") String destinationId, Pageable pageable);
+
+    @Query("""
+    SELECT p FROM Place p
+    LEFT JOIN FETCH p.images
+    LEFT JOIN FETCH p.category
+    WHERE p.destination.id = :destinationId
+      AND (
+        LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(p.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))
+      )
+    ORDER BY p.rating DESC
+""")
+    List<Place> searchPlacesInDestination(
+            @Param("destinationId") String destinationId,
+            @Param("keyword") String keyword);
 
 }

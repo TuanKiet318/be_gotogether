@@ -10,4 +10,6 @@ public class ItinerarySummaryResponse {
     private LocalDate startDate;
     private LocalDate endDate;
     private long totalItems;
+    private String destinationId;
+    private String destinationName;
 }

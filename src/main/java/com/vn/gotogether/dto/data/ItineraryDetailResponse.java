@@ -12,17 +12,26 @@ public class ItineraryDetailResponse {
     private LocalDate startDate;
     private LocalDate endDate;
     private List<Item> items;
+    private String destinationId;
+    private String destinationName;
 
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class Item {
         private String id;
         private String placeId;
+        private String placeName;
+        private String placeAddress;
+        private String placeImage;
         private Integer dayNumber;
         private Integer orderInDay;
         private LocalTime startTime;
         private LocalTime endTime;
         private String description;
         private Double estimatedCost;
-        private String transportMode; // trả về dạng String cho client
+        private String transportMode;
     }
 }

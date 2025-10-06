@@ -35,6 +35,9 @@
         @Column(nullable = false)
         private boolean isFeatured = false;
 
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "destination_id", nullable = false)
+        private Destination destination;
 
         // Nếu muốn giữ danh sách điểm “yêu thích” nhanh thì để lại,
         // còn chuẩn hóa thì có thể bỏ vì đã có ItineraryItem -> Place.

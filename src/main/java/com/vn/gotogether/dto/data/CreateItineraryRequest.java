@@ -18,6 +18,8 @@ public class CreateItineraryRequest {
     @NotNull
     private LocalDate endDate;
 
+    @NotNull
+    private String destinationId;
     // Danh sách item trong lịch trình (có thể rỗng/null)
     private List<CreateItineraryItemRequest> items;
 

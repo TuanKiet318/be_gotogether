@@ -14,7 +14,7 @@ public class PermissionService {
     private final ItineraryCollaboratorRepository collabRepo;
 
     public boolean isOwner(String itineraryId, String userId) {
-        return itineraryRepo.findOwnerIdByItineraryId(itineraryId)
+        return itineraryRepo.findOwnerIdById(itineraryId)
                 .map(ownerId -> ownerId.equals(userId))
                 .orElse(false);
     }

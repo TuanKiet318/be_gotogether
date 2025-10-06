@@ -11,7 +11,10 @@ import com.vn.gotogether.repository.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -545,4 +548,68 @@ public class DestinationService {
                 .total(placeDtos.size())
                 .build();
     }
+
+    public Page<PlaceDto> getPlacesByDestination(
+            String destinationId,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection
+    ) {
+        Sort sort = sortDirection.equalsIgnoreCase("desc") ?
+                Sort.by(sortBy).descending() :
+                Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Place> places = placeRepository.findAllByDestination(destinationId, pageable);
+
+        return places.map(PlaceDto::new);
+    }
+
+    public PlacesResponseDto searchPlacesInDestination(String destinationId, String keyword) {
+        Destination destination = destinationRepository.findById(destinationId)
+                .orElseThrow(() -> new EntityNotFoundException("Destination not found with id: " + destinationId));
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            // Nếu không có từ khóa => trả tất cả địa điểm
+            List<Place> allPlaces = placeRepository.findAllByDestination(destinationId, PageRequest.of(0, 100)).getContent();
+            List<PlaceDto> allDtos = allPlaces.stream()
+                    .map(p -> convertToPlaceDto(p, false, 0))
+                    .toList();
+            return PlacesResponseDto.builder()
+                    .destination(DestinationDto.builder()
+                            .id(destination.getId())
+                            .name(destination.getName())
+                            .build())
+                    .places(allDtos)
+                    .total(allDtos.size())
+                    .build();
+        }
+
+        List<Place> results = placeRepository.searchPlacesInDestination(destinationId, keyword.trim());
+
+        List<String> placeIds = results.stream().map(Place::getId).toList();
+        String userId = currentUserIdOrNull();
+        final Map<String, Boolean> favMap = buildFavoritedMap(userId, placeIds);
+        final Map<String, Long> favCountMap = buildFavoriteCountMap(placeIds);
+
+        List<PlaceDto> placeDtos = results.stream()
+                .map(p -> convertToPlaceDto(
+                        p,
+                        favMap.getOrDefault(p.getId(), false),
+                        favCountMap.getOrDefault(p.getId(), 0L)
+                ))
+                .toList();
+
+        return PlacesResponseDto.builder()
+                .destination(DestinationDto.builder()
+                        .id(destination.getId())
+                        .name(destination.getName())
+                        .build())
+                .places(placeDtos)
+                .total(placeDtos.size())
+                .build();
+    }
+
 }

@@ -4,7 +4,8 @@ import com.vn.gotogether.dto.data.*;
 import com.vn.gotogether.entity.User;
 import com.vn.gotogether.exception.InvalidDataException;
 import com.vn.gotogether.repository.user.UserRepository;
-import com.vn.gotogether.service.data.ItineraryService; // hoặc ItineraryItemService nếu bạn tách service
+import com.vn.gotogether.service.data.ItineraryItemService;
+import com.vn.gotogether.service.data.ItineraryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItineraryItemController {
 
-    private final ItineraryService itineraryService; // hoặc ItineraryItemService
+    private final ItineraryItemService itineraryService;
     private final UserRepository userRepository;
 
     // ====== CREATE: thêm 1 địa điểm (item) vào lịch trình ======
@@ -31,7 +32,7 @@ public class ItineraryItemController {
         return itineraryService.createItem(userId, itineraryId, req);
     }
 
-    // ====== UPDATE: chỉnh giờ/mô tả/move day/order… của 1 item ======
+    // ====== UPDATE: chỉnh sửa item ======
     @PatchMapping("/{itemId}")
     public ItineraryItemDto updateItem(@PathVariable String itineraryId,
                                        @PathVariable String itemId,
@@ -40,7 +41,7 @@ public class ItineraryItemController {
         return itineraryService.updateItem(userId, itineraryId, itemId, req);
     }
 
-    // ====== DELETE: xoá 1 item ======
+    // ====== DELETE ======
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteItem(@PathVariable String itineraryId,
@@ -49,7 +50,7 @@ public class ItineraryItemController {
         itineraryService.deleteItem(userId, itineraryId, itemId);
     }
 
-    // ====== REORDER: sắp xếp lại thứ tự trong 1 ngày ======
+    // ====== REORDER ======
     @PostMapping("/reorder")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reorderInDay(@PathVariable String itineraryId,
@@ -58,15 +59,16 @@ public class ItineraryItemController {
         itineraryService.reorderInDay(userId, itineraryId, req);
     }
 
-    // ====== IMPORT: thêm nhiều địa điểm vào lịch trình (bulk) ======
+    // ====== IMPORT (bulk) ======
     @PostMapping("/import")
     public ImportPlacesResponse importPlaces(@PathVariable String itineraryId,
                                              @Valid @RequestBody ImportPlacesRequest req) {
         String userId = currentUserId();
-        return itineraryService.importPlaces(itineraryId, userId, req);
+        // 🔥 SỬA LẠI THỨ TỰ THAM SỐ
+        return itineraryService.importPlaces(userId, itineraryId, req);
     }
 
-    // ====== LIST: liệt kê items (tuỳ chọn: lọc theo dayNumber) ======
+    // ====== LIST ======
     @GetMapping
     public List<ItineraryItemDto> listItems(@PathVariable String itineraryId,
                                             @RequestParam(required = false) Integer dayNumber) {
@@ -74,7 +76,7 @@ public class ItineraryItemController {
         return itineraryService.listItems(userId, itineraryId, dayNumber);
     }
 
-    // Helper lấy current userId từ SecurityContext
+    // Helper: lấy user hiện tại từ SecurityContext
     private String currentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
