@@ -79,6 +79,8 @@ public class ItineraryService {
                     .placeName(place.getName())
                     .placeAddress(place.getAddress())
                     .placeImage(imageUrl)
+                    .lat(place.getLat())
+                    .lng(place.getLon())
                     .dayNumber(x.getDayNumber())
                     .orderInDay(x.getOrderInDay())
                     .startTime(x.getStartTime())

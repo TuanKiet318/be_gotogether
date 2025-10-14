@@ -62,4 +62,10 @@ public interface ItineraryItemRepository extends JpaRepository<ItineraryItem, St
 
     void deleteAllByItinerary_Id(String itineraryId);
 
+    List<ItineraryItem> findByItinerary_IdAndDayNumberGreaterThanEqualOrderByDayNumberAsc(
+            String itineraryId, Integer dayNumber);
+
+    List<ItineraryItem> findByItinerary_IdAndDayNumber(
+            String itineraryId, Integer dayNumber);
+
 }

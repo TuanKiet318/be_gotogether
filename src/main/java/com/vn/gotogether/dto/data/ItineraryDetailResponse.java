@@ -26,6 +26,8 @@ public class ItineraryDetailResponse {
         private String placeName;
         private String placeAddress;
         private String placeImage;
+        private Double lat;
+        private Double lng;
         private Integer dayNumber;
         private Integer orderInDay;
         private LocalTime startTime;
