@@ -51,6 +51,101 @@ public class ItineraryService {
                         .build()
         ).toList();
     }
+    // src/main/java/com/vn/gotogether/service/data/ItineraryService.java
+    @Transactional
+    public String cloneItinerary(String userId, String sourceItineraryId, CloneItineraryRequest req) {
+        // 1) Lấy itinerary nguồn + kiểm tra quyền xem
+        Itinerary source = itineraryRepo.findById(sourceItineraryId)
+                .orElseThrow(() -> new InvalidDataException("Lịch trình nguồn không tồn tại"));
+
+        if (!permissionService.canView(sourceItineraryId, userId)) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập lịch trình nguồn");
+        }
+
+        // 2) Lấy user + destination
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new InvalidDataException("User không tồn tại"));
+
+        Destination dest = source.getDestination();
+        if (dest == null) {
+            throw new InvalidDataException("Lịch trình nguồn không có Destination hợp lệ");
+        }
+
+        // 3) Xác định title & date range mới
+        String newTitle = (req.getTitle() == null || req.getTitle().isBlank())
+                ? source.getTitle() + " (Bản sao)"
+                : req.getTitle().trim();
+
+        LocalDate newStart = (req.getStartDate() == null) ? source.getStartDate() : req.getStartDate();
+        LocalDate newEnd   = (req.getEndDate()   == null) ? source.getEndDate()   : req.getEndDate();
+
+        if (newStart == null || newEnd == null || newStart.isAfter(newEnd)) {
+            throw new InvalidDataException("Ngày bắt đầu/kết thúc không hợp lệ");
+        }
+
+        // 4) Tạo itinerary mới
+        Itinerary cloned = Itinerary.builder()
+                .user(user)
+                .destination(dest)
+                .title(newTitle)
+                .startDate(newStart)
+                .endDate(newEnd)
+                .build();
+        cloned = itineraryRepo.save(cloned);
+
+        // 5) Copy items (nếu được yêu cầu)
+        boolean includeItems = req.getIncludeItems() == null ? true : req.getIncludeItems();
+        if (includeItems) {
+            // số ngày mới
+            long newDays = java.time.temporal.ChronoUnit.DAYS.between(newStart, newEnd) + 1;
+
+            // Lấy items từ source (đã có repo sẵn)
+            List<ItineraryItem> srcItems =
+                    itemRepo.findByItinerary_IdOrderByDayNumberAscOrderInDayAsc(sourceItineraryId);
+
+            List<ItineraryItem> toSave = new ArrayList<>(srcItems.size());
+
+            for (ItineraryItem src : srcItems) {
+                Integer day = src.getDayNumber();
+                if (day == null || day < 1) day = 1;
+
+                if (day > newDays) {
+                    // Nếu item vượt phạm vi ngày mới
+                    if (Boolean.TRUE.equals(req.getTrimItemsExceedingNewRange())) {
+                        // Bỏ qua
+                        continue;
+                    } else {
+                        // Báo lỗi
+                        throw new InvalidDataException(
+                                "Item có dayNumber=" + day + " vượt quá số ngày của lịch trình mới (" + newDays + ")");
+                    }
+                }
+
+                // Build item mới
+                ItineraryItem clonedItem = ItineraryItem.builder()
+                        .itinerary(cloned)
+                        .place(src.getPlace())                // giữ reference Place
+                        .dayNumber(day)
+                        .orderInDay(src.getOrderInDay() == null ? 0 : src.getOrderInDay())
+                        .startTime(src.getStartTime())
+                        .endTime(src.getEndTime())
+                        .description(src.getDescription())
+                        .estimatedCost(src.getEstimatedCost())
+                        .transportMode(src.getTransportMode())
+                        .build();
+
+                toSave.add(clonedItem);
+            }
+
+            if (!toSave.isEmpty()) {
+                itemRepo.saveAll(toSave);
+            }
+        }
+
+        // 6) Không copy invites/quyền; new owner = current user
+
+        return cloned.getId();
+    }
 
     // ===== GET DETAIL =====
     @Transactional(Transactional.TxType.SUPPORTS)

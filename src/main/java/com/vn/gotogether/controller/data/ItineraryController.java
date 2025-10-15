@@ -46,6 +46,24 @@ public class ItineraryController {
         return ItineraryResponse.builder().id(id).build();
     }
 
+
+    // src/main/java/com/vn/gotogether/controller/data/ItineraryController.java
+    @PostMapping("/{sourceId}/clone")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ItineraryResponse cloneItinerary(
+            @PathVariable("sourceId") String sourceId,
+            @Valid @RequestBody CloneItineraryRequest req
+    ) {
+        // Lấy user hiện tại
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
+
+        String newId = itineraryService.cloneItinerary(user.getId(), sourceId, req);
+        return ItineraryResponse.builder().id(newId).build();
+    }
+
     // ====== GET LIST: các lịch trình của tôi ======
     @GetMapping
     public List<ItinerarySummaryResponse> listMine() {
