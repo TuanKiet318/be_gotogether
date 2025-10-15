@@ -142,5 +142,35 @@ public class ItineraryController {
         return itineraryService.getAllItineraries(destinationId, page, size);
     }
 
+    @PatchMapping("/{id}/rename")
+    public ResponseEntity<ItineraryResponse> renameItinerary(
+            @PathVariable("id") String id,
+            @RequestBody RenameItineraryRequest req
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
+
+        Itinerary updated = itineraryService.renameItinerary(user.getId(), id, req.getNewTitle());
+        return ResponseEntity.ok(ItineraryResponse.builder()
+                .id(updated.getId())
+                .build());
+    }
+    @PatchMapping("/{id}/dates")
+    public ResponseEntity<ItineraryResponse> updateDates(
+            @PathVariable("id") String id,
+            @RequestBody UpdateItineraryDatesRequest req
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
+
+        itineraryService.updateItineraryDates(user.getId(), id, req);
+        return ResponseEntity.ok(ItineraryResponse.builder().id(id).build());
+    }
 
 }
