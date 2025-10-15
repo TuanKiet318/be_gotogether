@@ -58,9 +58,9 @@ public class ItineraryService {
         Itinerary source = itineraryRepo.findById(sourceItineraryId)
                 .orElseThrow(() -> new InvalidDataException("Lịch trình nguồn không tồn tại"));
 
-        if (!permissionService.canView(sourceItineraryId, userId)) {
-            throw new AccessDeniedException("Bạn không có quyền truy cập lịch trình nguồn");
-        }
+//        if (!permissionService.canView(sourceItineraryId, userId)) {
+//            throw new AccessDeniedException("Bạn không có quyền truy cập lịch trình nguồn");
+//        }
 
         // 2) Lấy user + destination
         User user = userRepo.findById(userId)
