@@ -394,4 +394,61 @@ public class ItineraryService {
         itineraryRepo.delete(itinerary);
     }
 
+    @Transactional
+    public Itinerary renameItinerary(String userId, String itineraryId, String newTitle) {
+        if (newTitle == null || newTitle.isBlank()) {
+            throw new InvalidDataException("Tên lịch trình không được để trống");
+        }
+
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Lịch trình không tồn tại"));
+
+        // Chỉ cho phép chủ sở hữu sửa tên
+        if (!itinerary.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Bạn không có quyền đổi tên lịch trình này");
+        }
+
+        itinerary.setTitle(newTitle.trim());
+        return itineraryRepo.save(itinerary);
+    }
+    @Transactional
+    public void updateItineraryDates(String userId, String itineraryId, UpdateItineraryDatesRequest req) {
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Lịch trình không tồn tại"));
+
+        if (!itinerary.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Bạn không có quyền chỉnh sửa lịch trình này");
+        }
+
+        LocalDate newStart = req.getStartDate();
+        LocalDate newEnd = req.getEndDate();
+
+        if (newStart == null || newEnd == null || newStart.isAfter(newEnd)) {
+            throw new InvalidDataException("Ngày bắt đầu/kết thúc không hợp lệ");
+        }
+
+        LocalDate oldStart = itinerary.getStartDate();
+        LocalDate oldEnd = itinerary.getEndDate();
+
+        // Nếu rút ngắn thời gian (ví dụ từ 5 ngày còn 3)
+        long oldDays = java.time.temporal.ChronoUnit.DAYS.between(oldStart, oldEnd) + 1;
+        long newDays = java.time.temporal.ChronoUnit.DAYS.between(newStart, newEnd) + 1;
+
+        if (newDays < oldDays) {
+            // Xóa item có dayNumber > newDays
+            var itemsToDelete = itemRepo.findByItinerary_IdOrderByDayNumberAscOrderInDayAsc(itineraryId)
+                    .stream()
+                    .filter(i -> i.getDayNumber() != null && i.getDayNumber() > newDays)
+                    .toList();
+
+            if (!itemsToDelete.isEmpty()) {
+                itemRepo.deleteAll(itemsToDelete);
+            }
+        }
+
+        itinerary.setStartDate(newStart);
+        itinerary.setEndDate(newEnd);
+        itineraryRepo.save(itinerary);
+    }
+
 }
