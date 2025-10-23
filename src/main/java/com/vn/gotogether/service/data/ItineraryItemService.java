@@ -31,7 +31,7 @@
         // Tuỳ chọn: nếu có ActivityLogService riêng thì autowire, không có thì để null hoặc xoá hết phần log(...)
         // @Autowired(required = false)
         private ActivityLogService logService;
-
+        
         // ===== CREATE =====
         @Transactional
         public ItineraryItemDto createItem(String userId, String itineraryId, CreateItemRequest req) {

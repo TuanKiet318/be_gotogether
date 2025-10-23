@@ -165,4 +165,16 @@ public class DestinationController {
         }
     }
 
+    @GetMapping("/places/{placeId}/nearest-by-categories")
+    public ApiResponse<PlacesByCategoryResponseDto> getNearestPlacesByCategoriesFromPlace(
+            @PathVariable String placeId) {
+        try {
+            PlacesByCategoryResponseDto response = destinationService.getNearestPlacesByCategoriesFromPlace(placeId);
+            return ApiResponse.success(response);
+        } catch (EntityNotFoundException e) {
+            return ApiResponse.error(404, e.getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
 }
