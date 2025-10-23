@@ -16,4 +16,5 @@ public interface ItineraryCollaboratorRepository extends JpaRepository<Itinerary
 
     // 🆕 Thêm hàm này để lấy tất cả itinerary mà user đang là collaborator
     List<ItineraryCollaborator> findByUser_Id(String userId);
+    Optional<ItineraryCollaborator> findByItinerary_IdAndUser_Id(String itineraryId, String userId);
 }
