@@ -94,4 +94,24 @@ public interface PlaceRepository extends JpaRepository<Place, String> {
             @Param("destinationId") String destinationId,
             @Param("keyword") String keyword);
 
+    @Query("""
+    SELECT p FROM Place p
+    LEFT JOIN FETCH p.images
+    LEFT JOIN FETCH p.category
+    WHERE p.destination.id = :destinationId
+      AND p.id <> :placeId
+      AND p.category.id IS NOT NULL
+    ORDER BY (
+        6371 * acos(
+            cos(radians(:lat)) * cos(radians(p.lat)) *
+            cos(radians(p.lon) - radians(:lon)) +
+            sin(radians(:lat)) * sin(radians(p.lat))
+        ))
+    """)
+    List<Place> findNearestPlacesByCategoriesFromPlace(
+            @Param("lat") double lat,
+            @Param("lon") double lon,
+            @Param("destinationId") String destinationId,
+            @Param("placeId") String placeId);
+
 }

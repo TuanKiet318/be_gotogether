@@ -612,4 +612,88 @@ public class DestinationService {
                 .build();
     }
 
+    public PlacesByCategoryResponseDto getNearestPlacesByCategoriesFromPlace(String placeId) {
+
+        Place sourcePlace = placeRepository.findById(placeId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Place not found with id: " + placeId));
+
+        // Lấy tất cả places sắp xếp theo khoảng cách từ sourcePlace
+        List<Place> allPlaces = placeRepository.findNearestPlacesByCategoriesFromPlace(
+                sourcePlace.getLat(),
+                sourcePlace.getLon(),
+                sourcePlace.getDestination().getId(),
+                placeId
+        );
+
+        // Lọc lấy 1 place gần nhất cho mỗi category
+        Map<String, Place> categoryMap = new java.util.LinkedHashMap<>();
+        for (Place place : allPlaces) {
+            String categoryId = place.getCategory().getId();
+            if (!categoryMap.containsKey(categoryId)) {
+                categoryMap.put(categoryId, place);
+            }
+        }
+
+        List<Place> nearestPlaces = new java.util.ArrayList<>(categoryMap.values());
+
+        // Batch favorite
+        List<String> placeIds = nearestPlaces.stream()
+                .map(Place::getId)
+                .collect(Collectors.toList());
+
+        String userId = currentUserIdOrNull();
+        final Map<String, Boolean> favMap = buildFavoritedMap(userId, placeIds);
+        final Map<String, Long> favCountMap = buildFavoriteCountMap(placeIds);
+
+        // Map sang CategoryPlacesDto (nhóm theo category)
+        List<CategoryPlacesDto> categoryPlacesList = nearestPlaces.stream()
+                .map(p -> {
+                    PlaceDto placeDto = convertToPlaceDto(
+                            p,
+                            favMap.getOrDefault(p.getId(), false),
+                            favCountMap.getOrDefault(p.getId(), 0L)
+                    );
+
+                    // Tính khoảng cách (optional)
+                    double distance = calculateDistance(
+                            sourcePlace.getLat(),
+                            sourcePlace.getLon(),
+                            p.getLat(),
+                            p.getLon()
+                    );
+
+                    return CategoryPlacesDto.builder()
+                            .category(CategoryDto.builder()
+                                    .id(p.getCategory().getId())
+                                    .name(p.getCategory().getName())
+                                    .build())
+                            .nearestPlace(placeDto)
+                            .distance(Math.round(distance * 100.0) / 100.0) // làm tròn 2 chữ số
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return PlacesByCategoryResponseDto.builder()
+                .destination(DestinationDto.builder()
+                        .id(sourcePlace.getDestination().getId())
+                        .name(sourcePlace.getDestination().getName())
+                        .build())
+                .categoryPlaces(categoryPlacesList)
+                .totalCategories(categoryPlacesList.size())
+                .totalPlaces(categoryPlacesList.size())
+                .build();
+    }
+
+    // Helper method tính khoảng cách
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Radius of the earth in km
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 }
