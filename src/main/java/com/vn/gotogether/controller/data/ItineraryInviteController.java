@@ -7,11 +7,15 @@ import com.vn.gotogether.dto.data.InviteRequestDto;
 import com.vn.gotogether.dto.data.InviteResponseDto;
 import com.vn.gotogether.entity.ItineraryCollaborator;
 import com.vn.gotogether.entity.ItineraryInvite;
+import com.vn.gotogether.entity.User;
+import com.vn.gotogether.repository.user.UserRepository;
 import com.vn.gotogether.service.data.ItineraryInviteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,13 +26,39 @@ import java.util.List;
 public class ItineraryInviteController {
 
     private final ItineraryInviteService inviteService;
+    private final UserRepository userRepo;
 
     @PostMapping("/invites")
-    public InviteResponseDto sendInvite(@PathVariable String itineraryId,
-                                        @RequestParam String inviterId,
-                                        @Valid @RequestBody InviteRequestDto dto) {
+    public InviteResponseDto sendInvite(
+            @PathVariable String itineraryId,
+            @Valid @RequestBody InviteRequestDto dto) {
+
         dto.setItineraryId(itineraryId);
+        String inviterId = currentUserIdOrThrow();
         return InviteResponseDto.fromEntity(inviteService.sendInvite(inviterId, dto));
+    }
+
+    // ===== Helpers =====
+    private String currentUserIdOrThrow() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || "anonymousUser".equals(String.valueOf(auth.getPrincipal()))) {
+            throw new AccessDeniedException("Bạn cần đăng nhập.");
+        }
+
+        if (auth instanceof JwtAuthenticationToken jat) {
+            String idClaim = jat.getToken().getClaimAsString("id");
+            if (idClaim != null && !idClaim.isBlank()) {
+                return userRepo.findById(idClaim)
+                        .map(User::getId)
+                        .orElseThrow(() -> new AccessDeniedException("Tài khoản không hợp lệ (id)."));
+            }
+        }
+
+        String email = auth.getName();
+        return userRepo.findByEmail(email)
+                .map(User::getId)
+                .orElseThrow(() -> new AccessDeniedException("Tài khoản không hợp lệ (email)."));
     }
 
 //    // --- Accept / Decline ---

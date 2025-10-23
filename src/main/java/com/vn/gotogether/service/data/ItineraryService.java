@@ -20,6 +20,7 @@ import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -34,23 +35,42 @@ public class ItineraryService {
     private final PermissionService permissionService;
     private final ItineraryInviteService inviteService;
     private final ItineraryInviteRepository inviteRepo;
+    private final ItineraryCollaboratorRepository collaboratorRepo;
+    private final ItineraryCollaboratorRepository itineraryCollaboratorRepository;
 
-    // ===== LIST BY USER =====
+    // ItineraryService.java
     @Transactional(Transactional.TxType.SUPPORTS)
     public List<ItinerarySummaryResponse> listByUser(String userId) {
-        var its = itineraryRepo.findByUser_IdOrderByCreatedAtDesc(userId);
-        return its.stream().map(it ->
-                ItinerarySummaryResponse.builder()
+
+        // 1️⃣ Lấy danh sách lịch trình user là Owner
+        var ownedIts = itineraryRepo.findByUser_IdOrderByCreatedAtDesc(userId);
+
+        // 2️⃣ Lấy danh sách lịch trình user là Collaborator
+        var collabIts = collaboratorRepo.findByUser_Id(userId).stream()
+                .map(ItineraryCollaborator::getItinerary)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // 3️⃣ Gộp lại, loại trùng (tránh trường hợp vừa là owner vừa là collab)
+        Map<String, Itinerary> merged = new LinkedHashMap<>();
+        Stream.concat(ownedIts.stream(), collabIts.stream())
+                .forEach(it -> merged.putIfAbsent(it.getId(), it));
+
+        // 4️⃣ Trả về danh sách theo ItinerarySummaryResponse
+        return merged.values().stream()
+                .sorted(Comparator.comparing(Itinerary::getCreatedAt).reversed())
+                .map(it -> ItinerarySummaryResponse.builder()
                         .id(it.getId())
                         .title(it.getTitle())
                         .startDate(it.getStartDate())
                         .endDate(it.getEndDate())
                         .totalItems(itemRepo.countByItinerary_Id(it.getId()))
-                        .destinationId(it.getDestination().getId())
-                        .destinationName(it.getDestination().getName())
+                        .destinationId(it.getDestination() != null ? it.getDestination().getId() : null)
+                        .destinationName(it.getDestination() != null ? it.getDestination().getName() : null)
                         .build()
-        ).toList();
+                ).toList();
     }
+
     // src/main/java/com/vn/gotogether/service/data/ItineraryService.java
     @Transactional
     public String cloneItinerary(String userId, String sourceItineraryId, CloneItineraryRequest req) {
@@ -147,7 +167,6 @@ public class ItineraryService {
         return cloned.getId();
     }
 
-    // ===== GET DETAIL =====
     @Transactional(Transactional.TxType.SUPPORTS)
     public ItineraryDetailResponse getItineraryDetail(String userId, String itineraryId) {
         Itinerary it = itineraryRepo.findById(itineraryId)
@@ -157,12 +176,29 @@ public class ItineraryService {
             throw new AccessDeniedException("Bạn không có quyền truy cập lịch trình này");
         }
 
+        // ==== TÍNH ROLE CỦA NGƯỜI DÙNG HIỆN TẠI TRONG ITINERARY ====
+        String myRole = "VIEWER";
+        boolean owner = it.getUser() != null && userId.equals(it.getUser().getId());
+        if (owner) {
+            myRole = "OWNER";
+        } else {
+            // nếu có dùng JPA repo: itineraryCollaboratorRepository.findByItineraryIdAndUserId(...)
+            var collabOpt = itineraryCollaboratorRepository.findByItineraryIdAndUserId(itineraryId, userId);
+            if (collabOpt.isPresent()) {
+                myRole = collabOpt.get().getRole().name(); // EDITOR | VIEWER
+            } else {
+                // có thể là share-public (nếu app hỗ trợ), giữ VIEWER
+                myRole = "VIEWER";
+            }
+        }
+
+        boolean canEdit = permissionService.canEdit(itineraryId, userId);
+
         var items = itemRepo.findByItinerary_IdOrderByDayNumberAscOrderInDayAsc(itineraryId);
 
         var itemDtos = items.stream().map(x -> {
             var place = x.getPlace();
 
-            // Lấy ảnh đầu tiên (nếu có)
             String imageUrl = null;
             if (place.getImages() != null && !place.getImages().isEmpty()) {
                 imageUrl = place.getImages().iterator().next().getImageUrl();
@@ -186,7 +222,6 @@ public class ItineraryService {
                     .build();
         }).toList();
 
-
         return ItineraryDetailResponse.builder()
                 .id(it.getId())
                 .title(it.getTitle())
@@ -195,6 +230,8 @@ public class ItineraryService {
                 .destinationId(it.getDestination().getId())
                 .destinationName(it.getDestination().getName())
                 .items(itemDtos)
+                .myRole(myRole)
+                .canEdit(canEdit)
                 .build();
     }
 

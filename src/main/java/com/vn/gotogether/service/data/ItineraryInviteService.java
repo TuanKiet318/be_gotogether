@@ -60,7 +60,7 @@ public class ItineraryInviteService {
             throw new RuntimeException("Invite already sent to this email");
         }
 
-        // Build invite
+        // Khởi tạo invite ban đầu
         ItineraryInvite invite = ItineraryInvite.builder()
                 .itinerary(itinerary)
                 .inviter(inviter)
@@ -68,33 +68,69 @@ public class ItineraryInviteService {
                 .inviteToken(UUID.randomUUID().toString().replace("-", ""))
                 .createdAt(Instant.now())
                 .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
-                .status(ItineraryInvite.Status.PENDING)
-                .role(dto.getRole() != null ? ItineraryInvite.Role.valueOf(dto.getRole()) : ItineraryInvite.Role.EDITOR)
+                .status(ItineraryInvite.Status.PENDING) // mặc định là PENDING
+                .role(dto.getRole() != null
+                        ? ItineraryInvite.Role.valueOf(dto.getRole())
+                        : ItineraryInvite.Role.EDITOR)
                 .build();
 
         inviteRepo.save(invite);
-// Tên và email của người mời
+
+        // =============================
+        // AUTO-ACCEPT nếu email đã có tài khoản
+        // =============================
+        userRepo.findByEmail(dto.getInviteEmail()).ifPresent(user -> {
+            // Nếu người này đã có trong collaborator rồi thì bỏ qua
+            boolean alreadyExists = collaboratorRepo.existsByItineraryIdAndUserId(itinerary.getId(), user.getId());
+            if (!alreadyExists) {
+                ItineraryCollaborator.Role role = (invite.getRole() == ItineraryInvite.Role.EDITOR)
+                        ? ItineraryCollaborator.Role.EDITOR
+                        : ItineraryCollaborator.Role.VIEWER;
+
+                ItineraryCollaborator collaborator = ItineraryCollaborator.builder()
+                        .itinerary(itinerary)
+                        .user(user)
+                        .role(role)
+                        .addedAt(Instant.now())
+                        .build();
+                collaboratorRepo.save(collaborator);
+
+                invite.setStatus(ItineraryInvite.Status.ACCEPTED);
+                inviteRepo.save(invite);
+            }
+        });
+
+        // =============================
+        // Gửi email
+        // =============================
         String inviterName = inviter.getName();
         String inviterEmail = inviter.getEmail();
-
-// Role được mời
         String inviteRole = invite.getRole().name();
-
-// Link chấp nhận lời mời
         String link = "http://localhost:5173/invite?token=" + invite.getInviteToken();
 
-// Nội dung email mới
         String subject = inviterName + " đã mời bạn tham gia lịch trình";
-        String body = "<p>" + inviterName + " (" + inviterEmail + ") đã mời bạn tham gia lịch trình: <strong>"
-                + itinerary.getTitle() + "</strong></p>"
-                + "<p>Vai trò của bạn trong lịch trình: <strong>" + inviteRole + "</strong></p>"
-                + "<p>Nhấn vào đây để chấp nhận lời mời: <a href=\"" + link + "\">Tham gia</a></p>"
-                + "<p>Lời mời này sẽ hết hạn vào: " + invite.getExpiresAt() + "</p>";
+
+        String body;
+        if (invite.getStatus() == ItineraryInvite.Status.ACCEPTED) {
+            // ✅ Người được mời đã có tài khoản → auto accepted
+            body = "<p>" + inviterName + " (" + inviterEmail + ") đã thêm bạn vào lịch trình: <strong>"
+                    + itinerary.getTitle() + "</strong></p>"
+                    + "<p>Vai trò của bạn: <strong>" + inviteRole + "</strong></p>"
+                    + "<p>Bạn đã được thêm trực tiếp. Hãy đăng nhập để xem chi tiết lịch trình.</p>";
+        } else {
+            // ❗ Chưa có tài khoản → vẫn gửi link mời
+            body = "<p>" + inviterName + " (" + inviterEmail + ") đã mời bạn tham gia lịch trình: <strong>"
+                    + itinerary.getTitle() + "</strong></p>"
+                    + "<p>Vai trò của bạn trong lịch trình: <strong>" + inviteRole + "</strong></p>"
+                    + "<p>Nhấn vào đây để chấp nhận lời mời: <a href=\"" + link + "\">Tham gia</a></p>"
+                    + "<p>Lời mời này sẽ hết hạn vào: " + invite.getExpiresAt() + "</p>";
+        }
 
         emailService.sendEmail(dto.getInviteEmail(), subject, body);
 
         return invite;
     }
+
     public Optional<ItineraryInvite> getInviteByToken(String token) {
         return inviteRepo.findByInviteToken(token)
                 .filter(invite -> invite.getExpiresAt().isAfter(Instant.now()));

@@ -15,6 +15,9 @@ public class ItineraryDetailResponse {
     private String destinationId;
     private String destinationName;
 
+    private String myRole;   // OWNER | EDITOR | VIEWER
+    private boolean canEdit;
+
     @Getter
     @Setter
     @NoArgsConstructor
