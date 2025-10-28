@@ -55,7 +55,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // ✅ Chỉ các API admin mới yêu cầu xác thực
-                        .requestMatchers("/api/admin/**").authenticated()
+                        .requestMatchers("/api/admin/**", "/api/tours/create", "/api/tours/join", "/api/tours/cancel").authenticated()
 
                         // ✅ Các endpoint khác cũng không cần auth (nếu muốn chặn, có thể thay = .authenticated())
                         .anyRequest().permitAll()
