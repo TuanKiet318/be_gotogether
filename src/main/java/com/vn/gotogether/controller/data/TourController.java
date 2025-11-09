@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -181,5 +182,12 @@ public class TourController {
         response.put("tourId", tourId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/joined")
+    public ResponseEntity<List<TourDetailResponse>> getJoinedTours(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getClaimAsString("id");
+        List<TourDetailResponse> tours = tourService.getJoinedTours(userId);
+        return ResponseEntity.ok(tours);
     }
 }

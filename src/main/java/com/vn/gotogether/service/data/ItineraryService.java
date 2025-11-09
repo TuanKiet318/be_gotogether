@@ -488,4 +488,18 @@ public class ItineraryService {
         itineraryRepo.save(itinerary);
     }
 
+    @Transactional
+    public void updatePublicStatus(String itineraryId, String userId, boolean value) {
+        Itinerary it = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Không tìm thấy lịch trình"));
+
+        // Kiểm tra quyền: chỉ người tạo mới có thể bật/tắt public
+        if (it.getUser() == null || !it.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Bạn không có quyền thay đổi chế độ công khai của lịch trình này");
+        }
+
+        it.setPublic(value);
+        itineraryRepo.save(it);
+    }
+
 }

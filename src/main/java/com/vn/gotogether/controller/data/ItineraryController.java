@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/itineraries")
@@ -171,6 +172,21 @@ public class ItineraryController {
 
         itineraryService.updateItineraryDates(user.getId(), id, req);
         return ResponseEntity.ok(ItineraryResponse.builder().id(id).build());
+    }
+
+    @PatchMapping("/{id}/public")
+    public ResponseEntity<?> togglePublic(
+            @PathVariable String id,
+            @RequestParam boolean value
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
+
+        itineraryService.updatePublicStatus(id, user.getId(), value);
+        return ResponseEntity.ok(Map.of("message", "Cập nhật chế độ công khai thành công"));
     }
 
 }

@@ -35,12 +35,14 @@
         @Column(nullable = false)
         private boolean isFeatured = false;
 
+        @Column(name = "is_public", nullable = false)
+        private boolean isPublic = false;
+
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "destination_id", nullable = false)
         private Destination destination;
 
-        // Nếu muốn giữ danh sách điểm “yêu thích” nhanh thì để lại,
-        // còn chuẩn hóa thì có thể bỏ vì đã có ItineraryItem -> Place.
+
         @ManyToMany
         @JoinTable(name = "itinerary_attractions",
                 joinColumns = @JoinColumn(name = "itinerary_id"),

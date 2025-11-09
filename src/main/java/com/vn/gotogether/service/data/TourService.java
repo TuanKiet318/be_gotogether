@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityNotFoundException;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -267,4 +268,31 @@ public class TourService {
         tour.setCurrentParticipants(Math.max(0, current - 1));
         tourRepo.save(tour);
     }
+
+    public List<TourDetailResponse> getJoinedTours(String userId) {
+        List<TourParticipant> participants = participantRepo.findByUserId(userId);
+
+        return participants.stream()
+                .map(p -> {
+                    Tour tour = p.getTour();
+                    return TourDetailResponse.builder()
+                            .id(tour.getId())
+                            .title(tour.getTitle())
+                            .description(tour.getDescription())
+                            .startDate(tour.getStartDate())
+                            .endDate(tour.getEndDate())
+                            .registrationDeadline(tour.getRegistrationDeadline())
+                            .maxParticipants(tour.getMaxParticipants())
+                            .currentParticipants(tour.getCurrentParticipants())
+                            .pricePerPerson(tour.getPricePerPerson())
+                            .status(tour.getStatus())
+                            .createdAt(tour.getCreatedAt())
+                            .updatedAt(tour.getUpdatedAt())
+                            .itinerary(mapItineraryInfo(tour.getItinerary()))
+                            .creator(mapUserInfo(tour.getCreator()))
+                            .build();
+                })
+                .toList();
+    }
+
 }

@@ -12,5 +12,5 @@ public interface TourParticipantRepository extends JpaRepository<TourParticipant
     List<TourParticipant> findByTourId(String tourId);
     boolean existsByTourIdAndUserId(String tourId, String userId);
     Optional<TourParticipant> findByTourIdAndUserId(String tourId, String userId);
-
+    List<TourParticipant> findByUserId(String userId);
 }
