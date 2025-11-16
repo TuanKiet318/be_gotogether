@@ -501,5 +501,15 @@ public class ItineraryService {
         it.setPublic(value);
         itineraryRepo.save(it);
     }
+    public boolean canViewItineraryForUser(String itineraryId, String userId) {
+        try {
+            return permissionService.canView(itineraryId, userId);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
 
+    public Itinerary getItineraryEntity(String itineraryId) {
+        return itineraryRepo.findById(itineraryId).orElseThrow(() -> new IllegalArgumentException("Itinerary not found"));
+    }
 }
