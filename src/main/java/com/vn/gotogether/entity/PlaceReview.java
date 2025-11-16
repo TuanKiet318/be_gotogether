@@ -1,11 +1,16 @@
 package com.vn.gotogether.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "place_reviews")
+@Table(
+        name = "place_reviews",
+        uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"place_id", "user_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,10 +22,12 @@ public class PlaceReview {
 
     @ManyToOne
     @JoinColumn(name = "place_id", nullable = false)
+    @JsonIgnore
     private Place place;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @Column(nullable = false)
