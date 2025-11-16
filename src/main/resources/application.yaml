@@ -52,3 +52,8 @@ app:
   file:
     upload-dir: uploads/
     base-url: http://localhost:8081/uploads
+
+cloudinary:
+  cloud_name: df3m4ekxu
+  api_key: 582932789334468
+  api_secret: iodwAWeh1--OALKj6FTbMQErqKY
