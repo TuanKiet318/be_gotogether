@@ -8,13 +8,16 @@ import com.vn.gotogether.exception.InvalidDataException;
 import com.vn.gotogether.exception.UnauthorizedException;
 import com.vn.gotogether.repository.data.ItineraryItemRepository;
 import com.vn.gotogether.repository.user.UserRepository;
+import com.vn.gotogether.service.data.BlogService;
 import com.vn.gotogether.service.data.ItineraryInviteService;
+import com.vn.gotogether.service.data.ItineraryMediaService;
 import com.vn.gotogether.service.data.ItineraryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +36,8 @@ public class ItineraryController {
     private final UserRepository userRepository;
     private final ItineraryInviteService inviteService;
     private final UserRepository userRepo;
+    private final ItineraryMediaService mediaService;
+    private final BlogService blogService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -189,4 +194,113 @@ public class ItineraryController {
         return ResponseEntity.ok(Map.of("message", "Cập nhật chế độ công khai thành công"));
     }
 
+    // GET: Lấy tất cả media
+    @GetMapping("/{id}/media")
+    public ResponseEntity<List<ItineraryMediaDto>> getAllMedia(
+            @PathVariable("id") String itineraryId,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+        return ResponseEntity.ok(mediaService.getAllMedia(user.getId(), itineraryId));
+    }
+
+    // GET: Lấy media theo ngày
+    @GetMapping("/{id}/media/day/{dayNumber}")
+    public ResponseEntity<List<ItineraryMediaDto>> getMediaByDay(
+            @PathVariable("id") String itineraryId,
+            @PathVariable("dayNumber") Integer dayNumber,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+        return ResponseEntity.ok(mediaService.getMediaByDay(user.getId(), itineraryId, dayNumber));
+    }
+
+    // POST: Upload media
+    @PostMapping("/{id}/media")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<ItineraryMediaDto> uploadMedia(
+            @PathVariable("id") String itineraryId,
+            @Valid @RequestBody UploadMediaRequest req,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+        return ResponseEntity.ok(mediaService.uploadMedia(user.getId(), itineraryId, req));
+    }
+
+    // PUT: Cập nhật media
+    @PutMapping("/{id}/media/{mediaId}")
+    public ResponseEntity<ItineraryMediaDto> updateMedia(
+            @PathVariable("id") String itineraryId,
+            @PathVariable("mediaId") String mediaId,
+            @Valid @RequestBody UpdateMediaRequest req,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+        return ResponseEntity.ok(mediaService.updateMedia(user.getId(), itineraryId, mediaId, req));
+    }
+
+    // DELETE: Xóa media
+    @DeleteMapping("/{id}/media/{mediaId}")
+    public ResponseEntity<Void> deleteMedia(
+            @PathVariable("id") String itineraryId,
+            @PathVariable("mediaId") String mediaId,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+        mediaService.deleteMedia(user.getId(), itineraryId, mediaId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // GET: Thống kê media
+    @GetMapping("/{id}/media/stats")
+    public ResponseEntity<MediaStatsDto> getMediaStats(
+            @PathVariable("id") String itineraryId,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+        return ResponseEntity.ok(mediaService.getMediaStats(user.getId(), itineraryId));
+    }
+
+    // Tạo blog từ itinerary
+    @PostMapping("/{id}/blog")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<BlogDetailResponse> createBlogFromItinerary(
+            @PathVariable("id") String itineraryId,
+            @Valid @RequestBody CreateBlogFromItineraryRequest req,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+        return ResponseEntity.ok(blogService.createBlogFromItinerary(user.getId(), itineraryId, req));
+    }
+
+    // Lấy danh sách blog từ itinerary
+    @GetMapping("/{id}/blogs")
+    public ResponseEntity<List<BlogSummaryResponse>> getBlogsByItinerary(
+            @PathVariable("id") String itineraryId,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+
+//        // Kiểm tra quyền xem itinerary
+//        if (!permissionService.canView(itineraryId, user.getId())) {
+//            throw new AccessDeniedException("Bạn không có quyền xem blogs của lịch trình này");
+//        }
+
+        return ResponseEntity.ok(blogService.getBlogsByItinerary(itineraryId));
+    }
 }

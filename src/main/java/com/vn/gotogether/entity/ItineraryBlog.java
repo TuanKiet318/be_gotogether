@@ -7,13 +7,10 @@ import org.hibernate.annotations.GenericGenerator;
 import java.time.Instant;
 
 @Entity
-@Table(
-        name = "blog_likes",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"blog_id", "user_id"})
-)
+@Table(name = "itinerary_blogs")
 @Getter @Setter @NoArgsConstructor
 @AllArgsConstructor @Builder
-public class BlogLike {
+public class ItineraryBlog {
 
     @Id
     @GeneratedValue(generator = "UUID")
@@ -21,12 +18,12 @@ public class BlogLike {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "blog_id", nullable = false)
-    private Blog blog;
+    @JoinColumn(name = "itinerary_id", nullable = false)
+    private Itinerary itinerary;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "blog_id", nullable = false)
+    private Blog blog;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
