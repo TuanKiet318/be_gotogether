@@ -1,5 +1,6 @@
 package com.vn.gotogether.controller.data;
 
+import com.vn.gotogether.dto.WarningDto;
 import com.vn.gotogether.dto.data.*;
 import com.vn.gotogether.entity.Itinerary;
 import com.vn.gotogether.entity.ItineraryInvite;
@@ -12,6 +13,7 @@ import com.vn.gotogether.service.data.BlogService;
 import com.vn.gotogether.service.data.ItineraryInviteService;
 import com.vn.gotogether.service.data.ItineraryMediaService;
 import com.vn.gotogether.service.data.ItineraryService;
+import com.vn.gotogether.service.data.ItineraryValidationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,8 +38,10 @@ public class ItineraryController {
     private final UserRepository userRepository;
     private final ItineraryInviteService inviteService;
     private final UserRepository userRepo;
+    private final ItineraryValidationService itineraryValidationService;
     private final ItineraryMediaService mediaService;
     private final BlogService blogService;
+
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -81,7 +85,46 @@ public class ItineraryController {
 
         return itineraryService.listByUser(user.getId());
     }
+    @GetMapping("/{id}/warnings")
+    public ResponseEntity<?> getWarningsByDay(
+            @PathVariable("id") String id,
+            @RequestParam(required = false) Integer day,
+            @RequestParam(required = false) String timezone) {
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth == null ? null : auth.getName();
+        if (username == null) throw new com.vn.gotogether.exception.InvalidDataException("User không xác định");
+        com.vn.gotogether.entity.User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new com.vn.gotogether.exception.InvalidDataException("Người dùng không tồn tại."));
+
+        // permission check: use ItineraryService helper
+        if (!itineraryService.canViewItineraryForUser(id, user.getId())) {
+            throw new com.vn.gotogether.exception.UnauthorizedException("Bạn không có quyền xem itinerary này");
+        }
+
+        String tz = (timezone == null || timezone.isBlank()) ? "Asia/Ho_Chi_Minh" : timezone;
+        Map<Integer, List<WarningDto>> warningsByDay =
+                itineraryValidationService.validateItineraryByDay(id, tz);
+
+        if (day != null) {
+            List<WarningDto> list = warningsByDay.getOrDefault(day, List.of());
+            Map<String, Object> resp = Map.of(
+                    "itineraryId", id,
+                    "dayNumber", day,
+                    "warnings", list
+            );
+            return ResponseEntity.ok(resp);
+        } else {
+            com.vn.gotogether.entity.Itinerary it = itineraryService.getItineraryEntity(id);
+            Map<String, Object> resp = Map.of(
+                    "itineraryId", id,
+                    "startDate", it.getStartDate(),
+                    "endDate", it.getEndDate(),
+                    "warningsByDay", warningsByDay
+            );
+            return ResponseEntity.ok(resp);
+        }
+    }
 
     // ====== GET DETAIL: chi tiết 1 lịch trình (kèm items) ======
     @GetMapping("/{id}")
