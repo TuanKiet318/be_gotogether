@@ -1,35 +1,67 @@
 package com.vn.gotogether.controller;
 
+import com.vn.gotogether.entity.User;
+import com.vn.gotogether.exception.InvalidDataException;
+import com.vn.gotogether.repository.user.UserRepository;
 import com.vn.gotogether.service.data.MediaService;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/media")
+@RequestMapping("/api/upload")
 @RequiredArgsConstructor
 public class MediaController {
 
-    private final MediaService mediaService;
+    private final MediaService uploadService;
+    private final UserRepository userRepo;
 
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadMedia(
+    @PostMapping("/itinerary")
+    public ResponseEntity<?> uploadItineraryMedia(
             @RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal Jwt jwt) {
+            Authentication authentication) {
 
-        String userId = jwt.getClaimAsString("id");
-        String url = mediaService.uploadMedia(file, userId);
+        User user = userRepo.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("User không tồn tại"));
 
-        return ResponseEntity.ok(Map.of("url", url));
+        String url = uploadService.uploadMedia(file, user.getId(), "itinerary");
+
+        // Nếu là video, tạo thumbnail
+        String thumbnail = null;
+        if (file.getContentType() != null && file.getContentType().startsWith("video/")) {
+            thumbnail = uploadService.generateThumbnail(url);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "url", url,
+                "thumbnail", thumbnail != null ? thumbnail : "",
+                "type", file.getContentType().startsWith("image/") ? "IMAGE" : "VIDEO"
+        ));
+    }
+
+    @PostMapping("/blog")
+    public ResponseEntity<?> uploadBlogMedia(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+
+        User user = userRepo.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("User không tồn tại"));
+
+        String url = uploadService.uploadMedia(file, user.getId(), "blog");
+
+        String thumbnail = null;
+        if (file.getContentType() != null && file.getContentType().startsWith("video/")) {
+            thumbnail = uploadService.generateThumbnail(url);
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "url", url,
+                "thumbnail", thumbnail != null ? thumbnail : "",
+                "type", file.getContentType().startsWith("image/") ? "IMAGE" : "VIDEO"
+        ));
     }
 }

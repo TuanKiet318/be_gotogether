@@ -2,8 +2,9 @@ package com.vn.gotogether.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "blog_comments")
@@ -12,24 +13,26 @@ import java.time.LocalDateTime;
 public class BlogComment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private String id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "blog_id", nullable = false)
     private Blog blog;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "comment", nullable = false, columnDefinition = "TEXT")
     private String comment;
 
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
     @PrePersist
-    public void preCreate() {
-        this.createdAt = LocalDateTime.now();
+    public void prePersist() {
+        this.createdAt = Instant.now();
     }
 }

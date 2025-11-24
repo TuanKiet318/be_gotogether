@@ -1,25 +1,20 @@
 package com.vn.gotogether.dto.data;
 
-import lombok.*;
-
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import lombok.Data;
+
 import java.util.List;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data
 public class BlogCreateRequest {
+    private String title;
 
-    // id địa điểm (Place) gắn với blog – có thể null nếu không bắt buộc
-    private String placeId;
-
-    @NotBlank
-    @Size(min = 1, max = 5000)
+    @NotBlank(message = "Nội dung không được để trống")
     private String content;
 
-    // danh sách media (ảnh/video) đi kèm
+    private String excerpt;
+
+    private String placeId;
+
     private List<MediaCreateRequest> media;
 }

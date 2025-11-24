@@ -55,6 +55,11 @@
         @Builder.Default
         private List<ItineraryItem> items = new ArrayList<>();
 
+        @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
+        private List<ItineraryMedia> media = new ArrayList<>();
+
+        @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
+        private List<ItineraryBlog> blogs = new ArrayList<>();
         @PrePersist
         void onCreate() {
             Instant now = Instant.now();
