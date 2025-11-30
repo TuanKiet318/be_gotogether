@@ -26,7 +26,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/tours")
 @RequiredArgsConstructor
-public class TourController {
+public class    TourController {
 
     private final TourService tourService;
     private final UserRepository userRepo;

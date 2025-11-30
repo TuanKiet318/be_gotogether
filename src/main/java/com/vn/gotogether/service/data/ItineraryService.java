@@ -172,9 +172,9 @@ public class ItineraryService {
         Itinerary it = itineraryRepo.findById(itineraryId)
                 .orElseThrow(() -> new InvalidDataException("Lịch trình không tồn tại"));
 
-        if (!permissionService.canView(itineraryId, userId)) {
-            throw new AccessDeniedException("Bạn không có quyền truy cập lịch trình này");
-        }
+//        if (!it.isPublic()&&!permissionService.canView(itineraryId, userId)) {
+//            throw new AccessDeniedException("Bạn không có quyền truy cập lịch trình này");
+//        }
 
         // ==== TÍNH ROLE CỦA NGƯỜI DÙNG HIỆN TẠI TRONG ITINERARY ====
         String myRole = "VIEWER";
