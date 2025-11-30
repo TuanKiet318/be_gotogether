@@ -32,7 +32,7 @@ public class TourService {
     private final TourRepository tourRepo;
     private final TourParticipantRepository participantRepo;
     private final ItineraryRepository itineraryRepo;
-
+    private final NotificationService notificationService;
     /** Tạo tour từ itinerary */
     public Tour createTour(CreateTourRequest req, User creator) {
         Itinerary itinerary = itineraryRepo.findById(req.getItineraryId())
@@ -245,6 +245,13 @@ public class TourService {
 
         tour.setCurrentParticipants(current + 1);
         tourRepo.save(tour);
+
+        notificationService.notifyTourRegistration(
+                tour.getCreator().getId(),
+                user.getId(),
+                tourId,
+                tour.getTitle()
+        );
 
         return participant;
     }

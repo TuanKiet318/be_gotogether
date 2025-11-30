@@ -33,6 +33,7 @@ public class BlogService {
     private final ItineraryBlogRepository itineraryBlogRepo;
     private final ItineraryMediaRepository itineraryMediaRepo;
     private final PermissionService permissionService;
+    private final NotificationService notificationService;
 
     // ===== TẠO BLOG TỪ ITINERARY =====
     @Transactional
@@ -60,7 +61,7 @@ public class BlogService {
                 .content(req.getContent())
                 .excerpt(req.getExcerpt())
                 .isPublic(true)
-                .status(req.getAutoPublish() ? Blog.Status.PUBLISHED : Blog.Status.DRAFT)
+                .status(req.getAutoPublish() ? Blog.Status.PUBLISHED : Blog.Status.PUBLISHED)
                 .build();
 
         blog = blogRepo.save(blog);
@@ -115,7 +116,7 @@ public class BlogService {
                 .slug(slug)
                 .content(req.getContent())
                 .isPublic(true)
-                .status(Blog.Status.DRAFT)
+                .status(Blog.Status.PUBLISHED)
                 .build();
 
         blog = blogRepo.save(blog);
@@ -290,6 +291,12 @@ public class BlogService {
                 .user(user)
                 .comment(comment)
                 .build());
+        notificationService.notifyBlogComment(
+                blog.getUser().getId(),
+                userId,
+                blogId
+        );
+
     }
 
     // ===== LIKE / UNLIKE =====
@@ -311,6 +318,12 @@ public class BlogService {
                 .blog(blog)
                 .user(user)
                 .build());
+
+        notificationService.notifyBlogLike(
+                blog.getUser().getId(),  // Chủ blog
+                userId,                   // Người like
+                blogId
+        );
 
         return true;
     }
@@ -372,6 +385,7 @@ public class BlogService {
                 .status(blog.getStatus().name())
                 .authorName(blog.getUser().getName())
                 .authorAvatar(blog.getUser().getAvatar())
+                .content(blog.getContent())
                 .media(media)
                 .likeCount(likeCount)
                 .commentCount(commentCount)

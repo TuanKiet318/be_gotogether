@@ -19,7 +19,7 @@ public class BlogSummaryResponse {
 
     private String authorName;
     private String authorAvatar;
-
+    private String content;
     private List<MediaDto> media;
 
     private Long likeCount;
