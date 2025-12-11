@@ -38,27 +38,80 @@ public class ItineraryService {
     private final ItineraryCollaboratorRepository collaboratorRepo;
     private final ItineraryCollaboratorRepository itineraryCollaboratorRepository;
 
-    // ItineraryService.java
     @Transactional(Transactional.TxType.SUPPORTS)
-    public List<ItinerarySummaryResponse> listByUser(String userId) {
-
-        // 1️⃣ Lấy danh sách lịch trình user là Owner
-        var ownedIts = itineraryRepo.findByUser_IdOrderByCreatedAtDesc(userId);
-
-        // 2️⃣ Lấy danh sách lịch trình user là Collaborator
-        var collabIts = collaboratorRepo.findByUser_Id(userId).stream()
+    public List<ItinerarySummaryResponse> listByUser(
+            String userId,
+            List<String> destinationIds,
+            String type,
+            Integer minDuration,
+            Integer maxDuration,
+            String sortBy,
+            String sortDir,
+            String period // new param
+    ) {
+        List<Itinerary> ownedIts = itineraryRepo.findByUser_IdOrderByCreatedAtDesc(userId);
+        List<Itinerary> collabIts = collaboratorRepo.findByUser_Id(userId).stream()
                 .map(ItineraryCollaborator::getItinerary)
                 .filter(Objects::nonNull)
                 .toList();
 
-        // 3️⃣ Gộp lại, loại trùng (tránh trường hợp vừa là owner vừa là collab)
-        Map<String, Itinerary> merged = new LinkedHashMap<>();
-        Stream.concat(ownedIts.stream(), collabIts.stream())
-                .forEach(it -> merged.putIfAbsent(it.getId(), it));
+        Stream<Itinerary> stream;
+        switch (type.toLowerCase()) {
+            case "owner" -> stream = ownedIts.stream();
+            case "collaborator" -> stream = collabIts.stream();
+            default -> stream = Stream.concat(ownedIts.stream(), collabIts.stream());
+        }
 
-        // 4️⃣ Trả về danh sách theo ItinerarySummaryResponse
-        return merged.values().stream()
-                .sorted(Comparator.comparing(Itinerary::getCreatedAt).reversed())
+        // destination filter
+        if (destinationIds != null && !destinationIds.isEmpty()) {
+            stream = stream.filter(it ->
+                    it.getDestination() != null &&
+                            destinationIds.contains(it.getDestination().getId())
+            );
+        }
+
+        // duration filter (days)
+        stream = stream.filter(it -> {
+            if (it.getStartDate() == null || it.getEndDate() == null) return true;
+            long duration = ChronoUnit.DAYS.between(it.getStartDate(), it.getEndDate()) + 1;
+            boolean ok = true;
+            if (minDuration != null) ok &= duration >= minDuration;
+            if (maxDuration != null) ok &= duration <= maxDuration;
+            return ok;
+        });
+
+        // period filter: upcoming, ongoing, past, all
+        if (period != null && !period.equalsIgnoreCase("all")) {
+            LocalDate today = LocalDate.now(); // nếu start/end là LocalDate
+            String p = period.toLowerCase();
+            stream = stream.filter(it -> {
+                LocalDate s = it.getStartDate();
+                LocalDate e = it.getEndDate();
+                if (s == null || e == null) return false;
+
+                return switch (p) {
+                    case "upcoming" -> s.isAfter(today);
+                    case "ongoing" -> ( !s.isAfter(today) && !e.isBefore(today) ); // s <= today && e >= today
+                    case "past" -> e.isBefore(today);
+                    default -> true;
+                };
+            });
+        }
+
+        // sorting
+        Comparator<Itinerary> comparator = switch (sortBy) {
+            case "startDate" -> Comparator.comparing(Itinerary::getStartDate, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> Comparator.comparing(Itinerary::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
+        };
+        if ("desc".equalsIgnoreCase(sortDir)) comparator = comparator.reversed();
+
+        List<Itinerary> result = stream
+                .sorted(comparator)
+                .distinct()
+                .toList();
+
+        // map -> response
+        return result.stream()
                 .map(it -> ItinerarySummaryResponse.builder()
                         .id(it.getId())
                         .title(it.getTitle())
@@ -67,8 +120,110 @@ public class ItineraryService {
                         .totalItems(itemRepo.countByItinerary_Id(it.getId()))
                         .destinationId(it.getDestination() != null ? it.getDestination().getId() : null)
                         .destinationName(it.getDestination() != null ? it.getDestination().getName() : null)
-                        .build()
-                ).toList();
+                        .ownerId(it.getUser() != null ? it.getUser().getId() : null)
+                        .ownerName(it.getUser() != null ? it.getUser().getName() : null)
+                        .ownerAvatar(it.getUser() != null ? it.getUser().getAvatar() : null)
+                        .isOwner(userId.equals(it.getUser() != null ? it.getUser().getId() : null))
+                        .build())
+                .toList();
+    }
+
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public List<ItinerarySummaryResponse> listByUser(
+            String userId,
+            List<String> destinationIds,
+            String type,
+            Integer minDuration,
+            Integer maxDuration,
+            String sortBy,
+            String sortDir
+    ) {
+        List<Itinerary> ownedIts = itineraryRepo.findByUser_IdOrderByCreatedAtDesc(userId);
+        List<Itinerary> collabIts = collaboratorRepo.findByUser_Id(userId).stream()
+                .map(ItineraryCollaborator::getItinerary)
+                .filter(Objects::nonNull)
+                .toList();
+
+        /** -----------------------
+         * 1️⃣ Chọn loại (owner/collab/all)
+         * ------------------------ */
+        Stream<Itinerary> stream;
+
+        switch (type.toLowerCase()) {
+            case "owner" ->
+                    stream = ownedIts.stream();
+            case "collaborator" ->
+                    stream = collabIts.stream();
+            default ->  // all
+                    stream = Stream.concat(ownedIts.stream(), collabIts.stream());
+        }
+
+        /** -----------------------
+         * 2️⃣ Lọc theo destinationIds
+         * ------------------------ */
+        if (destinationIds != null && !destinationIds.isEmpty()) {
+            stream = stream.filter(it ->
+                    it.getDestination() != null &&
+                            destinationIds.contains(it.getDestination().getId())
+            );
+        }
+
+        /** -----------------------
+         * 3️⃣ Lọc theo duration (ngày)
+         * ------------------------ */
+        stream = stream.filter(it -> {
+            if (it.getStartDate() == null || it.getEndDate() == null) return true;
+
+            long duration = ChronoUnit.DAYS.between(it.getStartDate(), it.getEndDate()) + 1;
+
+            boolean ok = true;
+            if (minDuration != null) ok &= duration >= minDuration;
+            if (maxDuration != null) ok &= duration <= maxDuration;
+
+            return ok;
+        });
+
+        /** -----------------------
+         * 4️⃣ Sắp xếp theo sortBy + sortDir
+         * ------------------------ */
+        Comparator<Itinerary> comparator;
+
+        comparator = switch (sortBy) {
+            case "startDate" -> Comparator.comparing(Itinerary::getStartDate,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> Comparator.comparing(Itinerary::getCreatedAt,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+        };
+
+        if (sortDir.equalsIgnoreCase("desc")) {
+            comparator = comparator.reversed();
+        }
+
+        List<Itinerary> result = stream
+                .sorted(comparator)
+                .distinct()
+                .toList();
+
+        /** -----------------------
+         * 5️⃣ Map thành Response
+         * ------------------------ */
+        return result.stream()
+                .map(it -> ItinerarySummaryResponse.builder()
+                        .id(it.getId())
+                        .title(it.getTitle())
+                        .startDate(it.getStartDate())
+                        .endDate(it.getEndDate())
+                        .totalItems(itemRepo.countByItinerary_Id(it.getId()))
+                        .destinationId(it.getDestination() != null ? it.getDestination().getId() : null)
+                        .destinationName(it.getDestination() != null ? it.getDestination().getName() : null)
+                        .ownerId(it.getUser() != null ? it.getUser().getId() : null)
+                        .ownerName(it.getUser() != null ? it.getUser().getName() : null)
+                        .ownerAvatar(it.getUser() != null ? it.getUser().getAvatar() : null)
+                        .isOwner(userId.equals(
+                                it.getUser() != null ? it.getUser().getId() : null
+                        ))
+                        .build())
+                .toList();
     }
 
     // src/main/java/com/vn/gotogether/service/data/ItineraryService.java

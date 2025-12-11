@@ -75,16 +75,47 @@ public class ItineraryController {
     }
 
     // ====== GET LIST: các lịch trình của tôi ======
+//    @GetMapping
+//    public List<ItinerarySummaryResponse> listMine() {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        String username = authentication.getName();
+//
+//        User user = userRepository.findByEmail(username)
+//                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
+//
+//        return itineraryService.listByUser(user.getId());
+//    }
+
     @GetMapping
-    public List<ItinerarySummaryResponse> listMine() {
+    public List<ItinerarySummaryResponse> listMine(
+            @RequestParam(required = false) List<String> destinationIds,
+            @RequestParam(defaultValue = "all") String type,  // owner, collaborator, all
+            @RequestParam(required = false) Integer minDuration,
+            @RequestParam(required = false) Integer maxDuration,
+            @RequestParam(defaultValue = "createdAt") String sortBy, // createdAt | startDate
+            @RequestParam(defaultValue = "desc") String sortDir,     // asc | desc
+            @RequestParam(defaultValue = "all") String period       // upcoming | ongoing | past | all
+    ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
 
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
 
-        return itineraryService.listByUser(user.getId());
+        return itineraryService.listByUser(
+                user.getId(),
+                destinationIds,
+                type,
+                minDuration,
+                maxDuration,
+                sortBy,
+                sortDir,
+                period
+        );
     }
+
+
+
     @GetMapping("/{id}/warnings")
     public ResponseEntity<?> getWarningsByDay(
             @PathVariable("id") String id,

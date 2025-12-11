@@ -135,7 +135,7 @@ public class ItineraryValidationService {
                     long available = Duration.between(curEnd, nextStart).toMinutes();
                     if (available < (travelMin + BUFFER)) {
                         list.add(w(itemId, WarningDto.Type.NOT_ENOUGH_TRAVEL,
-                                String.format("Giữa '%s' → '%s' cần ~%d phút + buffer %d phút nhưng chỉ có %d phút trống.",
+                                String.format("Giữa '%s' → '%s' cần khoảng %d phút nhưng chỉ có khoảng %d phút trống.",
                                         place.getName(), nextPlace.getName(), travelMin, BUFFER, available)));
                     }
                 }
