@@ -390,6 +390,58 @@ public class ItineraryService {
                 .build();
     }
 
+    public ItineraryFeaturedDetailResponse getFeaturedDetail(String itineraryId) {
+
+        Itinerary itinerary = itineraryRepo
+                .findFeaturedDetailById(itineraryId)
+                .orElseThrow(() -> new RuntimeException("Featured itinerary not found"));
+
+        return ItineraryFeaturedDetailResponse.builder()
+                .id(itinerary.getId())
+                .title(itinerary.getTitle())
+                .startDate(itinerary.getStartDate())
+                .endDate(itinerary.getEndDate())
+                .overview(itinerary.getOverview())
+                .heroImages(itinerary.getImageHero())
+                .destinationId(itinerary.getDestination().getId())
+                .destinationName(itinerary.getDestination().getName())
+                .tags(
+                        itinerary.getTags().stream()
+                                .map(tag -> ItineraryFeaturedDetailResponse.TagResponse.builder()
+                                        .id(tag.getId())
+                                        .name(tag.getName())
+                                        .slug(tag.getCode())
+                                        .build()
+                                )
+                                .collect(Collectors.toSet())
+                )
+                .items(
+                        itinerary.getItems().stream()
+                                .map(item -> ItineraryFeaturedDetailResponse.Item.builder()
+                                        .id(item.getId())
+                                        .placeId(item.getPlace().getId())
+                                        .placeName(item.getPlace().getName())
+                                        .placeAddress(item.getPlace().getAddress())
+                                        .placeImage(item.getPlace().getImages().iterator().next().getImageUrl() )
+                                        .lat(item.getPlace().getLat())
+                                        .lng(item.getPlace().getLon())
+                                        .dayNumber(item.getDayNumber())
+                                        .orderInDay(item.getOrderInDay())
+                                        .startTime(item.getStartTime())
+                                        .endTime(item.getEndTime())
+                                        .description(item.getDescription())
+                                        .estimatedCost(item.getEstimatedCost())
+                                        .transportMode(
+                                                item.getTransportMode() != null
+                                                        ? item.getTransportMode().name()
+                                                        : null
+                                        )
+                                        .build()
+                                )
+                                .toList()
+                )
+                .build();
+    }
     // ===== CREATE ITINERARY =====
     @Transactional
     public String createItinerary(String userId, CreateItineraryRequest req) {
@@ -506,19 +558,47 @@ public class ItineraryService {
         return itineraryId;
     }
 
-    // ===== FEATURED / ALL =====
-    public List<ItinerarySummaryResponse> getFeaturedItineraries(String destinationId, int limit) {
-        return itineraryRepo.findByDestination_IdAndIsFeaturedTrue(destinationId, PageRequest.of(0, limit))
+    public List<ItineraryFeaturedResponse> getFeaturedItineraries(
+            String destinationId,
+            int limit
+    ) {
+        return itineraryRepo
+                .findByDestination_IdAndIsFeaturedTrueAndIsPublicTrue(
+                        destinationId,
+                        PageRequest.of(0, limit)
+                )
                 .stream()
-                .map(i -> ItinerarySummaryResponse.builder()
-                        .id(i.getId())
-                        .title(i.getTitle())
-                        .startDate(i.getStartDate())
-                        .endDate(i.getEndDate())
-                        .totalItems(i.getItems().size())
-                        .destinationId(i.getDestination().getId())
-                        .destinationName(i.getDestination().getName())
-                        .build())
+                .map(itinerary -> {
+
+
+                    return ItineraryFeaturedResponse.builder()
+                            .id(itinerary.getId())
+                            .title(itinerary.getTitle())
+                            .overview(itinerary.getOverview())
+
+                            .startDate(itinerary.getStartDate())
+                            .endDate(itinerary.getEndDate())
+                            .totalDays(
+                                    (int) (itinerary.getEndDate().toEpochDay()
+                                            - itinerary.getStartDate().toEpochDay() + 1)
+                            )
+                            .totalItems(itinerary.getItems().size())
+
+                            .destinationId(itinerary.getDestination().getId())
+                            .destinationName(itinerary.getDestination().getName())
+
+                            .heroImage(
+                                    itinerary.getImageHero().stream().findFirst().orElse(null)
+                            )
+
+                            .tags(
+                                    itinerary.getTags()
+                                            .stream()
+                                            .map(Tag::getName) // tiếng Việt
+                                            .collect(Collectors.toSet())
+                            )
+                            .build();
+                })
                 .toList();
     }
 

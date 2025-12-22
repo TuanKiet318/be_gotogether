@@ -56,6 +56,11 @@ public class ItineraryController {
         return ItineraryResponse.builder().id(id).build();
     }
 
+    @GetMapping("/featured/{id}")
+    public ItineraryFeaturedDetailResponse getFeaturedDetail(@PathVariable String id) {
+        return itineraryService.getFeaturedDetail(id);
+    }
+
 
     // src/main/java/com/vn/gotogether/controller/data/ItineraryController.java
     @PostMapping("/{sourceId}/clone")
@@ -210,9 +215,15 @@ public class ItineraryController {
     }
 
     @GetMapping("/by-destination/{destinationId}/featured")
-    public List<ItinerarySummaryResponse> getFeaturedItineraries(@PathVariable String destinationId) {
-        return itineraryService.getFeaturedItineraries(destinationId, 5);
+    public List<ItineraryFeaturedResponse> getFeaturedItineraries(
+            @PathVariable String destinationId
+    ) {
+        return itineraryService.getFeaturedItineraries(
+                destinationId,
+                5
+        );
     }
+
 
     @GetMapping("/by-destination/{destinationId}")
     public Page<ItinerarySummaryResponse> getAllItineraries(

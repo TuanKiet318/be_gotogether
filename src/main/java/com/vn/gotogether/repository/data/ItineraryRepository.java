@@ -3,6 +3,7 @@ package com.vn.gotogether.repository.data;
 import com.vn.gotogether.entity.Itinerary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +19,18 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, String> {
     @Query("select i.user.id from Itinerary i where i.id = :itineraryId")
     Optional<String> findOwnerIdById(@Param("itineraryId") String itineraryId);
 
+    Page<Itinerary> findByDestination_IdAndIsFeaturedTrueAndIsPublicTrue(
+            String destinationId,
+            Pageable pageable
+    );
+
+        @EntityGraph(attributePaths = {
+                "destination",
+                "items",
+                "items.place",
+                "tags"
+        })
+        Optional<Itinerary> findFeaturedDetailById(String id);
 
     // check isOwner
     boolean existsByIdAndUser_Id(String id, String userId);
