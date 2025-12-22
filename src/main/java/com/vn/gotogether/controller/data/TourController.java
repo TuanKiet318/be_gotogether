@@ -7,6 +7,7 @@ import com.vn.gotogether.entity.Tour;
 import com.vn.gotogether.entity.User;
 import com.vn.gotogether.model.TourStatus;
 import com.vn.gotogether.repository.user.UserRepository;
+import com.vn.gotogether.service.LocalGuideApplicationService;
 import com.vn.gotogether.service.data.TourService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ public class    TourController {
 
     private final TourService tourService;
     private final UserRepository userRepo;
+    private final LocalGuideApplicationService localGuideApplicationService;
 
     /**
      * Lấy danh sách tours với phân trang và filter
@@ -82,6 +84,10 @@ public class    TourController {
         User creator = userRepo.findById(creatorId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if(!localGuideApplicationService.checkIfUserIsLocalGuide(creator.getId())){
+            throw new RuntimeException("Bạn phải đăng kí trở thành hướng dẫn viên trước");
+        }
+
         Tour tour = tourService.createTour(req, creator);
 
         Map<String, Object> response = new HashMap<>();
@@ -105,6 +111,8 @@ public class    TourController {
 
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+
 
         Tour tour = tourService.updateTour(tourId, req, user);
 

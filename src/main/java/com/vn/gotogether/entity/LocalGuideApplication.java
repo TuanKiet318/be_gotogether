@@ -3,7 +3,9 @@ package com.vn.gotogether.entity;
 import com.vn.gotogether.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "local_guide_applications")
@@ -16,39 +18,77 @@ public class LocalGuideApplication {
     @Id
     private String id;
 
+    // ================= USER =================
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;              // Người nộp đơn
+    private User user;
 
-    @Column(name = "full_name", nullable = false)
+    // ================= BASIC INFO =================
+    @Column(nullable = false)
     private String fullName;
 
-    @Column(name = "national_id", nullable = false)
+    @Column(nullable = false)
+    private String phone;
+
+    @Column(nullable = false)
     private String nationalId;
 
-    @Column(name = "front_image_url", nullable = false)
+    private Integer experienceYears;
+
+    // 🔥 ĐỔI từ String → Set<String> (dữ liệu sạch)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "local_guide_application_languages",
+            joinColumns = @JoinColumn(name = "application_id")
+    )
+    @Column(name = "language")
+    private Set<String> languages;
+
+    // ================= DOCUMENT PROOF =================
+    @Column(nullable = false)
     private String frontImageUrl;
 
-    @Column(name = "back_image_url", nullable = false)
+    @Column(nullable = false)
     private String backImageUrl;
 
-    @Column(name = "local_address", nullable = false)
+    // 🔥 BẮT BUỘC – chống mạo danh
+    @Column(nullable = false)
+    private String selfieWithIdUrl;
+
+    // Optional
+    private String portfolioUrl;
+    private String certificateUrl;
+
+    // ================= DESTINATION =================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destination_id", nullable = false)
+    private Destination destination;
+
+    @Column(nullable = false)
     private String localAddress;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    // ================= REVIEW / AUDIT =================
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ApplicationStatus status;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(columnDefinition = "TEXT")
+    private String reviewerNote;      // Lý do từ chối / ghi chú duyệt
 
-    @Column(name = "reviewed_at")
+    private LocalDateTime createdAt;
     private LocalDateTime reviewedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewer_id")
-    private User reviewer;           // Admin duyệt
-}
+    private User reviewer;
 
+    // ================= RATING (future) =================
+    @Builder.Default
+    private Double ratingAverage = 0.0;
+
+    @Builder.Default
+    private Integer ratingCount = 0;
+}
