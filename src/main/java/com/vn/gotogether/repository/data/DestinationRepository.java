@@ -1,6 +1,7 @@
 package com.vn.gotogether.repository.data;
 
 import com.vn.gotogether.entity.Destination;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,4 +35,13 @@ public interface DestinationRepository extends JpaRepository<Destination, String
             "OR LOWER(d.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "ORDER BY d.name")
     List<Destination> searchDestinations(@Param("keyword") String keyword);
+
+    @Query("""
+        SELECT d 
+        FROM Destination d
+        LEFT JOIN d.places p
+        GROUP BY d
+        ORDER BY COUNT(p) DESC
+    """)
+    List<Destination> findTopDestinations(Pageable pageable);
 }
