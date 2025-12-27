@@ -57,6 +57,17 @@ public class DestinationService {
                 .collect(Collectors.toList());
     }
 
+    public List<DestinationSummaryDto> getTop6FeaturedDestinations() {
+        Pageable pageable = PageRequest.of(0, 6);
+        List<Destination> destinations =
+                destinationRepository.findTopDestinations(pageable);
+
+        return destinations.stream()
+                .map(this::convertToSummaryDto)
+                .toList();
+    }
+
+
     public DestinationDetailDto getDestinationDetail(String destinationId) {
         Destination destination = destinationRepository.findByIdWithDetails(destinationId)
                 .orElseThrow(() -> new EntityNotFoundException("Destination not found with id: " + destinationId));

@@ -23,5 +23,4 @@ public class UserResponse {
     LocalDateTime passwordUpdatedAt;
     boolean online;
     boolean active;
-
 }

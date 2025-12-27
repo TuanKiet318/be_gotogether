@@ -58,10 +58,12 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUserInfo(request));
     }
 
+    // Đổi mật khẩu
     @PutMapping("/change-password")
-    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<String> changePassword(
+            @RequestBody ChangePasswordRequest request) {
         userService.changePassword(request);
-        return ResponseEntity.ok("Thay đổi mật khẩu thành công.");
+        return ResponseEntity.ok("Đổi mật khẩu thành công");
     }
 
     @PostMapping("/ping")

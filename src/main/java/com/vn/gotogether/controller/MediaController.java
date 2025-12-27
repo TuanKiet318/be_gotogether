@@ -64,4 +64,35 @@ public class MediaController {
                 "type", file.getContentType().startsWith("image/") ? "IMAGE" : "VIDEO"
         ));
     }
+
+    @PostMapping("/avatar")
+    public ResponseEntity<?> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+
+        User user = userRepo.findByEmail(authentication.getName())
+                .orElseThrow(() -> new InvalidDataException("User không tồn tại"));
+
+        // Validate chỉ cho phép image
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            throw new InvalidDataException("Avatar phải là file ảnh");
+        }
+
+        // Xóa avatar cũ nếu tồn tại
+        if (user.getAvatar() != null && !user.getAvatar().isBlank()) {
+            uploadService.deleteMedia(user.getAvatar());
+        }
+
+        // Upload avatar (folder riêng)
+        String avatarUrl = uploadService.uploadMedia(file, user.getId(), "avatar");
+
+        // Lưu avatar vào user
+        user.setAvatar(avatarUrl);
+        userRepo.save(user);
+
+        return ResponseEntity.ok(Map.of(
+                "avatar", avatarUrl
+        ));
+    }
+
 }

@@ -1,10 +1,12 @@
 package com.vn.gotogether.entity;
 
 
+import com.vn.gotogether.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,6 +35,22 @@ public class User {
 
     @Column(name = "avatar", length = 500)
     String avatar;
+
+    @Column(length = 20)
+    String phone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    Gender gender;
+
+    @Column
+    LocalDate birthday;
+
+    @Column(columnDefinition = "TEXT")
+    String bio;
+
+    @Column(length = 255)
+    String address;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")

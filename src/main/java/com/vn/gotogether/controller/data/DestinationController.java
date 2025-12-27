@@ -177,4 +177,15 @@ public class DestinationController {
             return ApiResponse.error(500, "Internal server error: " + e.getMessage());
         }
     }
+
+    @GetMapping("/destinations/featured")
+    public ApiResponse<List<DestinationSummaryDto>> getFeaturedDestinations() {
+        try {
+            List<DestinationSummaryDto> destinations =
+                    destinationService.getTop6FeaturedDestinations();
+            return ApiResponse.success(destinations);
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
 }

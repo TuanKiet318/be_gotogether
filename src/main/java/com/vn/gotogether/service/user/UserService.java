@@ -1,10 +1,7 @@
 package com.vn.gotogether.service.user;
 
 
-import com.vn.gotogether.dto.user.ChangePasswordRequest;
-import com.vn.gotogether.dto.user.UserRegisterRequest;
-import com.vn.gotogether.dto.user.UserResponse;
-import com.vn.gotogether.dto.user.UserUpdateRequest;
+import com.vn.gotogether.dto.user.*;
 import com.vn.gotogether.entity.Role;
 import com.vn.gotogether.entity.User;
 import com.vn.gotogether.exception.InvalidDataException;
@@ -211,19 +208,23 @@ public class UserService implements UserDetailsService {
     }
 
     public void changePassword(ChangePasswordRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
+        User user = userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new InvalidDataException("Mật khẩu hiện tại không đúng.");
+            throw new InvalidDataException("Mật khẩu hiện tại không đúng");
+        }
+
+        if (request.getNewPassword().length() < 6) {
+            throw new InvalidDataException("Mật khẩu mới phải >= 6 ký tự");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
+
 
     public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAllUsersWithAdminFirst();
@@ -300,4 +301,57 @@ public class UserService implements UserDetailsService {
                         .build())
                 .toList();
     }
+
+    public UserProfileResponse  getUserProfile() {
+        User user = getCurrentUser();
+
+        return UserProfileResponse .builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .avatar(user.getAvatar())
+                .phone(user.getPhone())
+                .gender(user.getGender())
+                .birthday(user.getBirthday())
+                .bio(user.getBio())
+                .address(user.getAddress())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+
+    public UserProfileResponse  updateProfile(UpdateProfileRequest request) {
+        User user = getCurrentUser();
+
+        if (request.getName() != null) {
+            user.setName(request.getName());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getGender() != null) {
+            user.setGender(request.getGender());
+        }
+        if (request.getBirthday() != null) {
+            user.setBirthday(request.getBirthday());
+        }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
+        }
+
+        userRepository.save(user);
+        return getUserProfile();
+    }
+
+
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại"));
+    }
+
+
 }
