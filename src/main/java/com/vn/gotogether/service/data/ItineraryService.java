@@ -37,6 +37,54 @@ public class ItineraryService {
     private final ItineraryInviteRepository inviteRepo;
     private final ItineraryCollaboratorRepository collaboratorRepo;
     private final ItineraryCollaboratorRepository itineraryCollaboratorRepository;
+    private final TagRepository tagRepo;
+
+    @Transactional
+    public ItineraryFeaturedDetailResponse featureItinerary(
+            String itineraryId,
+            FeatureItineraryRequest request,
+            Set<String> heroImageUrls
+    ) {
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Itinerary không tồn tại"));
+
+        Set<Tag> tags = tagRepo.findAllById(request.getTagIds())
+                .stream()
+                .collect(Collectors.toSet());
+
+        itinerary.setOverview(request.getOverview());
+        itinerary.setImageHero(heroImageUrls);
+        itinerary.setTags(tags);
+        itinerary.setFeatured(true);
+        itinerary.setPublic(true);
+
+        return mapToFeaturedDetail(itinerary);
+    }
+
+    private ItineraryFeaturedDetailResponse mapToFeaturedDetail(Itinerary itinerary) {
+        return ItineraryFeaturedDetailResponse.builder()
+                .id(itinerary.getId())
+                .title(itinerary.getTitle())
+                .overview(itinerary.getOverview())
+                .startDate(itinerary.getStartDate())
+                .endDate(itinerary.getEndDate())
+                .destinationId(itinerary.getDestination().getId())
+                .destinationName(itinerary.getDestination().getName())
+                .heroImages(itinerary.getImageHero())
+                .tags(
+                        itinerary.getTags().stream()
+                                .map(tag -> ItineraryFeaturedDetailResponse.TagResponse.builder()
+                                        .id(tag.getId())
+                                        .name(tag.getName())
+                                        .slug(tag.getCode())
+                                        .build()
+                                )
+                                .collect(Collectors.toSet())
+                )
+                .items(List.of()) // mới tạo chưa có item
+                .build();
+    }
+
 
     @Transactional(Transactional.TxType.SUPPORTS)
     public List<ItinerarySummaryResponse> listByUser(
