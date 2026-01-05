@@ -1,4 +1,4 @@
-package com.vn.gotogether.controller.data;
+package com.vn.gotogether.controller.admin;
 
 import com.vn.gotogether.dto.data.FeatureItineraryRequest;
 import com.vn.gotogether.dto.data.ItineraryFeaturedDetailResponse;

@@ -79,18 +79,6 @@ public class ItineraryController {
         return ItineraryResponse.builder().id(newId).build();
     }
 
-    // ====== GET LIST: các lịch trình của tôi ======
-//    @GetMapping
-//    public List<ItinerarySummaryResponse> listMine() {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        String username = authentication.getName();
-//
-//        User user = userRepository.findByEmail(username)
-//                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
-//
-//        return itineraryService.listByUser(user.getId());
-//    }
-
     @GetMapping
     public List<ItinerarySummaryResponse> listMine(
             @RequestParam(required = false) List<String> destinationIds,
