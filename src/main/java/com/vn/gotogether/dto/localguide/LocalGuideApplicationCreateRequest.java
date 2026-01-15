@@ -36,9 +36,6 @@ public class LocalGuideApplicationCreateRequest {
     @NotNull
     private MultipartFile backImageFile;
 
-    // 🔥 BẮT BUỘC – chống mạo danh
-    @NotNull
-    private MultipartFile selfieWithIdFile;
 
     // Optional
     private MultipartFile portfolioFile;

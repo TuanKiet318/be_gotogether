@@ -1,5 +1,6 @@
 package com.vn.gotogether.entity;
 
+import com.vn.gotogether.dto.localguide.LocalGuideApplicationAdminResponse;
 import com.vn.gotogether.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -51,9 +52,6 @@ public class LocalGuideApplication {
     @Column(nullable = false)
     private String backImageUrl;
 
-    // 🔥 BẮT BUỘC – chống mạo danh
-    @Column(nullable = false)
-    private String selfieWithIdUrl;
 
     // Optional
     private String portfolioUrl;
@@ -91,4 +89,7 @@ public class LocalGuideApplication {
 
     @Builder.Default
     private Integer ratingCount = 0;
+
 }
+
+

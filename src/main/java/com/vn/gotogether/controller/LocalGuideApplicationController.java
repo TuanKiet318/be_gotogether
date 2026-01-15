@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,20 +28,21 @@ public class LocalGuideApplicationController {
     private final MediaService uploadService;
     private final UserRepository userRepo;
 
+
     // ----------------------------------------------------
     //  CREATE APPLICATION (USER)
     // ----------------------------------------------------
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public LocalGuideApplicationResponse apply(
-            @Valid @ModelAttribute LocalGuideApplicationCreateRequest request,
-            Authentication authentication
+            @Valid @ModelAttribute LocalGuideApplicationCreateRequest request
     ) {
-        User user = userRepo.findByEmail(authentication.getName())
-                .orElseThrow(() -> new InvalidDataException("User không tồn tại"));
 
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        User user = userRepo.findByEmail(username)
+                .orElseThrow(() -> new InvalidDataException("Người dùng không tồn tại."));
         String frontUrl = upload(request.getFrontImageFile(), user);
         String backUrl = upload(request.getBackImageFile(), user);
-        String selfieUrl = upload(request.getSelfieWithIdFile(), user);
 
         String portfolioUrl = uploadOptional(request.getPortfolioFile(), user);
         String certificateUrl = uploadOptional(request.getCertificateFile(), user);
@@ -49,7 +51,6 @@ public class LocalGuideApplicationController {
                 request,
                 frontUrl,
                 backUrl,
-                selfieUrl,
                 portfolioUrl,
                 certificateUrl,
                 user

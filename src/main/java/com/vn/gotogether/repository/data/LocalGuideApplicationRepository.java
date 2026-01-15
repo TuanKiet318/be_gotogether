@@ -2,6 +2,8 @@ package com.vn.gotogether.repository.data;
 
 import com.vn.gotogether.entity.LocalGuideApplication;
 import com.vn.gotogether.enums.ApplicationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,10 @@ public interface LocalGuideApplicationRepository
 
     // Kiểm tra user đã từng nộp đơn chưa
     boolean existsByUserId(String userId);
+    Page<LocalGuideApplication> findByStatus(
+            ApplicationStatus status,
+            Pageable pageable
+    );
 
     // Lấy đơn theo user
     Optional<LocalGuideApplication> findByUserId(String userId);

@@ -36,7 +36,6 @@ public class LocalGuideApplicationService {
             LocalGuideApplicationCreateRequest req,
             String frontUrl,
             String backUrl,
-            String selfieUrl,
             String portfolioUrl,
             String certificateUrl,
             User user
@@ -63,7 +62,6 @@ public class LocalGuideApplicationService {
                 .languages(req.getLanguages())
                 .frontImageUrl(frontUrl)
                 .backImageUrl(backUrl)
-                .selfieWithIdUrl(selfieUrl)
                 .portfolioUrl(portfolioUrl)
                 .certificateUrl(certificateUrl)
                 .localAddress(req.getLocalAddress())

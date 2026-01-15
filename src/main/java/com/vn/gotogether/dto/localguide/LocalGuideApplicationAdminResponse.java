@@ -10,82 +10,45 @@ import java.util.Set;
 
 @Data
 @Builder
-public class LocalGuideApplicationResponse {
+public class LocalGuideApplicationAdminResponse {
 
     private String id;
     private String userId;
-
-    // ================= BASIC INFO =================
     private String fullName;
     private String phone;
     private String nationalId;
     private Integer experienceYears;
-
-    // 🔥 Dữ liệu sạch
     private Set<String> languages;
 
-    // ================= DOCUMENTS =================
-    private String frontImageUrl;
-    private String backImageUrl;
-    private String selfieWithIdUrl;
-
-    private String portfolioUrl;
-    private String certificateUrl;
-
-    // ================= DESTINATION =================
     private String destinationId;
     private String destinationName;
 
     private String localAddress;
     private String description;
 
-    // ================= REVIEW / STATUS =================
     private ApplicationStatus status;
+    private String reviewerNote;
 
     private LocalDateTime createdAt;
     private LocalDateTime reviewedAt;
-
-    private String reviewerId;
-    private String reviewerNote;
-
-    // ================= RATING =================
-    private Double ratingAverage;
-    private Integer ratingCount;
-
-    // ==================================================
-    //                    MAPPER
-    // ==================================================
-    public static LocalGuideApplicationResponse from(LocalGuideApplication e) {
-        return LocalGuideApplicationResponse.builder()
+    public static LocalGuideApplicationAdminResponse from(LocalGuideApplication e) {
+        return LocalGuideApplicationAdminResponse.builder()
                 .id(e.getId())
                 .userId(e.getUser().getId())
-
                 .fullName(e.getFullName())
                 .phone(e.getPhone())
                 .nationalId(e.getNationalId())
                 .experienceYears(e.getExperienceYears())
                 .languages(e.getLanguages())
-
-                .frontImageUrl(e.getFrontImageUrl())
-                .backImageUrl(e.getBackImageUrl())
-                .portfolioUrl(e.getPortfolioUrl())
-                .certificateUrl(e.getCertificateUrl())
-
                 .destinationId(e.getDestination().getId())
                 .destinationName(e.getDestination().getName())
-
                 .localAddress(e.getLocalAddress())
                 .description(e.getDescription())
-
                 .status(e.getStatus())
+                .reviewerNote(e.getReviewerNote())
                 .createdAt(e.getCreatedAt())
                 .reviewedAt(e.getReviewedAt())
-
-                .reviewerId(e.getReviewer() != null ? e.getReviewer().getId() : null)
-                .reviewerNote(e.getReviewerNote())
-
-                .ratingAverage(e.getRatingAverage())
-                .ratingCount(e.getRatingCount())
                 .build();
     }
 }
+
