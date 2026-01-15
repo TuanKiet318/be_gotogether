@@ -1,6 +1,7 @@
 package com.vn.gotogether.repository.data;
 
 import com.vn.gotogether.entity.Destination;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -44,4 +45,14 @@ public interface DestinationRepository extends JpaRepository<Destination, String
         ORDER BY COUNT(p) DESC
     """)
     List<Destination> findTopDestinations(Pageable pageable);
+
+    // Query tìm kiếm với phân trang
+    @Query("SELECT DISTINCT d FROM Destination d " +
+            "LEFT JOIN FETCH d.images " +
+            "WHERE (:search IS NULL OR :search = '' OR " +
+            "       LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "       LOWER(d.description) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Destination> searchDestinations(
+            @Param("search") String search,
+            Pageable pageable);
 }

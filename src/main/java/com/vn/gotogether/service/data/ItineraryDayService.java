@@ -24,9 +24,12 @@ public class ItineraryDayService {
     private final ItineraryRepository itineraryRepo;
     private final ItineraryItemRepository itemRepo;
     private final PermissionService permissionService;
+    private final ItineraryValidationService itineraryValidationService;
 
     @Transactional
     public ItineraryDayResponse insertBefore(String userId, String itineraryId, int dayNumber, int count) {
+        itineraryValidationService.validateItineraryEditable(itineraryId, userId);
+
         ensureCanEdit(userId, itineraryId);
         Itinerary itin = getItinerary(itineraryId);
 
@@ -63,6 +66,8 @@ public class ItineraryDayService {
 
     @Transactional
     public ItineraryDayResponse insertAfter(String userId, String itineraryId, int dayNumber, int count) {
+        itineraryValidationService.validateItineraryEditable(itineraryId, userId);
+
         ensureCanEdit(userId, itineraryId);
         Itinerary itin = getItinerary(itineraryId);
 
@@ -99,6 +104,8 @@ public class ItineraryDayService {
 
     @Transactional
     public ItineraryDayResponse removeDay(String userId, String itineraryId, int dayNumber) {
+        itineraryValidationService.validateItineraryEditable(itineraryId, userId);
+
         ensureCanEdit(userId, itineraryId);
         Itinerary itin = getItinerary(itineraryId);
 

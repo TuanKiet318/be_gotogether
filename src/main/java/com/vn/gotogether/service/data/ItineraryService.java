@@ -37,6 +37,15 @@ public class ItineraryService {
     private final ItineraryInviteRepository inviteRepo;
     private final ItineraryCollaboratorRepository collaboratorRepo;
     private final ItineraryCollaboratorRepository itineraryCollaboratorRepository;
+    private final ItineraryValidationService itineraryValidationService;
+
+    public boolean canEditItinerary(String itineraryId, String userId) {
+        return itineraryValidationService.canEditItinerary(itineraryId, userId);
+    }
+
+    public void validateItineraryEditable(String itineraryId, String userId) {
+        itineraryValidationService.validateItineraryEditable(itineraryId, userId);
+    }
 
     @Transactional(Transactional.TxType.SUPPORTS)
     public List<ItinerarySummaryResponse> listByUser(
@@ -588,6 +597,8 @@ public class ItineraryService {
 
     @Transactional
     public Itinerary renameItinerary(String userId, String itineraryId, String newTitle) {
+        itineraryValidationService.validateItineraryEditable(itineraryId, userId);
+
         if (newTitle == null || newTitle.isBlank()) {
             throw new InvalidDataException("Tên lịch trình không được để trống");
         }
@@ -605,6 +616,7 @@ public class ItineraryService {
     }
     @Transactional
     public void updateItineraryDates(String userId, String itineraryId, UpdateItineraryDatesRequest req) {
+        itineraryValidationService.validateItineraryEditable(itineraryId, userId);
         Itinerary itinerary = itineraryRepo.findById(itineraryId)
                 .orElseThrow(() -> new InvalidDataException("Lịch trình không tồn tại"));
 
@@ -645,6 +657,7 @@ public class ItineraryService {
 
     @Transactional
     public void updatePublicStatus(String itineraryId, String userId, boolean value) {
+        itineraryValidationService.validateItineraryEditable(itineraryId, userId);
         Itinerary it = itineraryRepo.findById(itineraryId)
                 .orElseThrow(() -> new InvalidDataException("Không tìm thấy lịch trình"));
 
@@ -667,4 +680,6 @@ public class ItineraryService {
     public Itinerary getItineraryEntity(String itineraryId) {
         return itineraryRepo.findById(itineraryId).orElseThrow(() -> new IllegalArgumentException("Itinerary not found"));
     }
+
+
 }

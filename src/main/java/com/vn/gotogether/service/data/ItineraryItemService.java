@@ -27,7 +27,7 @@
         private final PlaceRepository placeRepo;
         private final ItineraryItemRepository itemRepo;
         private final PermissionService permissionService;
-
+        private final ItineraryValidationService itineraryValidationService;
         // Tuỳ chọn: nếu có ActivityLogService riêng thì autowire, không có thì để null hoặc xoá hết phần log(...)
         // @Autowired(required = false)
         private ActivityLogService logService;
@@ -35,6 +35,7 @@
         // ===== CREATE =====
         @Transactional
         public ItineraryItemDto createItem(String userId, String itineraryId, CreateItemRequest req) {
+            itineraryValidationService.validateItineraryEditable(itineraryId, userId);
             ensureCanEdit(userId, itineraryId);
             Itinerary itin = getItin(itineraryId);
             Integer day = defaultDay(req.getDayNumber(), 1);
@@ -74,7 +75,9 @@
         // ===== UPDATE =====
         @Transactional
         public ItineraryItemDto updateItem(String userId, String itineraryId, String itemId, UpdateItemRequest req) {
+            itineraryValidationService.validateItineraryEditable(itineraryId, userId);
             ensureCanEdit(userId, itineraryId);
+
             ItineraryItem item = itemRepo.findById(itemId)
                     .orElseThrow(() -> new InvalidDataException("Item không tồn tại"));
             if (!item.getItinerary().getId().equals(itineraryId)) {
@@ -120,6 +123,7 @@
         // ===== DELETE =====
         @Transactional
         public void deleteItem(String userId, String itineraryId, String itemId) {
+            itineraryValidationService.validateItineraryEditable(itineraryId, userId);
             ensureCanEdit(userId, itineraryId);
             ItineraryItem item = itemRepo.findById(itemId)
                     .orElseThrow(() -> new InvalidDataException("Item không tồn tại"));
@@ -132,6 +136,7 @@
 
         @Transactional
         public void reorderInDay(String userId, String itineraryId, ReorderRequest req) {
+            itineraryValidationService.validateItineraryEditable(itineraryId, userId);
             ensureCanEdit(userId, itineraryId);
 
             final int day = req.dayNumber(); // record accessor
@@ -172,6 +177,7 @@
         // ===== IMPORT BULK =====
         @Transactional
         public ImportPlacesResponse importPlaces(String userId, String itineraryId, ImportPlacesRequest req) {
+            itineraryValidationService.validateItineraryEditable(itineraryId, userId);
             ensureCanEdit(userId, itineraryId);
             Itinerary itin = getItin(itineraryId);
 

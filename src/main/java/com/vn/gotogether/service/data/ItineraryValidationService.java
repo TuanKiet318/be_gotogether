@@ -2,13 +2,19 @@ package com.vn.gotogether.service.data;
 
 import com.vn.gotogether.dto.WarningDto;
 import com.vn.gotogether.entity.*;
+import com.vn.gotogether.exception.InvalidDataException;
+import com.vn.gotogether.exception.UnauthorizedException;
 import com.vn.gotogether.repository.data.CategoryDefaultRepository;
 import com.vn.gotogether.repository.data.OpeningHourRepository;
 import com.vn.gotogether.repository.data.PlaceRepository;
 import com.vn.gotogether.repository.data.ItineraryItemRepository;
 import com.vn.gotogether.repository.data.ItineraryRepository;
+import com.vn.gotogether.repository.data.ItineraryCollaboratorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.*;
 import java.util.*;
@@ -24,10 +30,162 @@ public class ItineraryValidationService {
     private final PlaceRepository placeRepo;
     private final OpeningHourRepository openingHourRepository;
     private final CategoryDefaultRepository categoryDefaultRepository;
+    private final ItineraryCollaboratorRepository collaboratorRepository;
     private final com.vn.gotogether.service.HaversineTravelTimeProvider travelTimeProvider;
 
     private static final int MIN_TRAVEL_BUFFER_MIN = 10;
     private static final double MIN_VISIT_BUFFER_PERCENT = 0.5;
+
+    // ================== VALIDATION CHO CHỈNH SỬA ITINERARY ==================
+
+    /**
+     * Kiểm tra user có quyền chỉnh sửa itinerary không
+     */
+    @Transactional(readOnly = true)
+    public boolean canEditItinerary(String itineraryId, String userId) {
+        // 1. Lấy itinerary
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Itinerary không tồn tại"));
+
+        // 2. Kiểm tra owner (user trong itinerary entity)
+        if (itinerary.getUser().getId().equals(userId)) {
+            return true;
+        }
+
+        // 3. Kiểm tra collaborator với role EDITOR
+        return collaboratorRepository.existsByItineraryIdAndUserIdAndRole(
+                itineraryId,
+                userId,
+                ItineraryCollaborator.Role.EDITOR
+        );
+    }
+
+    /**
+     * Kiểm tra user có quyền xem itinerary không
+     */
+    @Transactional(readOnly = true)
+    public boolean canViewItinerary(String itineraryId, String userId) {
+        // 1. Lấy itinerary
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Itinerary không tồn tại"));
+
+        // 2. Kiểm tra public
+        if (itinerary.isPublic()) {
+            return true;
+        }
+
+        // 3. Kiểm tra owner
+        if (itinerary.getUser().getId().equals(userId)) {
+            return true;
+        }
+
+        // 4. Kiểm tra collaborator (EDITOR hoặc VIEWER)
+        return collaboratorRepository.findByItineraryIdAndUserId(itineraryId, userId).isPresent();
+    }
+
+    /**
+     * Kiểm tra itinerary có đang ở trạng thái có thể chỉnh sửa không (chưa qua ngày kết thúc)
+     */
+    @Transactional(readOnly = true)
+    public boolean isItineraryEditableByTime(String itineraryId) {
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Itinerary không tồn tại"));
+
+        return isItineraryEditableByTime(itinerary);
+    }
+
+    /**
+     * Overload method với timezone
+     */
+    @Transactional(readOnly = true)
+    public boolean isItineraryEditableByTime(String itineraryId, String timezone) {
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Itinerary không tồn tại"));
+
+        return isItineraryEditableByTime(itinerary, timezone);
+    }
+
+    /**
+     * Kiểm tra dựa trên entity itinerary
+     */
+    public boolean isItineraryEditableByTime(Itinerary itinerary) {
+        return isItineraryEditableByTime(itinerary, "Asia/Ho_Chi_Minh");
+    }
+
+    public boolean isItineraryEditableByTime(Itinerary itinerary, String timezone) {
+        if (itinerary.getEndDate() == null) {
+            return true; // Itinerary chưa có end date có thể chỉnh sửa
+        }
+
+        ZoneId zone = ZoneId.of(timezone != null && !timezone.isBlank() ? timezone : "Asia/Ho_Chi_Minh");
+        LocalDate today = LocalDate.now(zone);
+
+        // Chỉnh sửa được khi: today <= endDate (chưa qua ngày kết thúc)
+        return !today.isAfter(itinerary.getEndDate());
+    }
+
+    /**
+     * Validate tổng hợp - kiểm tra cả permission và thời gian
+     * @throws UnauthorizedException nếu không có quyền
+     * @throws ResponseStatusException nếu itinerary đã qua thời gian
+     */
+    @Transactional(readOnly = true)
+    public void validateItineraryEditable(String itineraryId, String userId) {
+        validateItineraryEditable(itineraryId, userId, "Asia/Ho_Chi_Minh");
+    }
+
+    @Transactional(readOnly = true)
+    public void validateItineraryEditable(String itineraryId, String userId, String timezone) {
+        // 1. Kiểm tra permission
+        if (!canEditItinerary(itineraryId, userId)) {
+            throw new UnauthorizedException("Bạn không có quyền chỉnh sửa lịch trình này");
+        }
+
+        // 2. Kiểm tra thời gian
+        Itinerary itinerary = itineraryRepo.findById(itineraryId)
+                .orElseThrow(() -> new InvalidDataException("Itinerary không tồn tại"));
+
+        if (!isItineraryEditableByTime(itinerary, timezone)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Không thể chỉnh sửa lịch trình đã qua thời gian thực hiện"
+            );
+        }
+    }
+
+    /**
+     * Lấy trạng thái thời gian của itinerary
+     */
+    public ItineraryTimeStatus getItineraryTimeStatus(Itinerary itinerary, String timezone) {
+        if (itinerary.getStartDate() == null || itinerary.getEndDate() == null) {
+            return ItineraryTimeStatus.UPCOMING;
+        }
+
+        ZoneId zone = ZoneId.of(timezone != null && !timezone.isBlank() ? timezone : "Asia/Ho_Chi_Minh");
+        LocalDate today = LocalDate.now(zone);
+
+        LocalDate startDate = itinerary.getStartDate();
+        LocalDate endDate = itinerary.getEndDate();
+
+        if (today.isAfter(endDate)) {
+            return ItineraryTimeStatus.PAST;
+        } else if (today.isBefore(startDate)) {
+            return ItineraryTimeStatus.UPCOMING;
+        } else {
+            return ItineraryTimeStatus.ONGOING;
+        }
+    }
+
+    /**
+     * Enum cho trạng thái thời gian
+     */
+    public enum ItineraryTimeStatus {
+        PAST,      // Đã qua
+        ONGOING,   // Đang diễn ra
+        UPCOMING   // Sắp tới
+    }
+
+    // ================== VALIDATION WARNINGS (CODE CŨ GIỮ NGUYÊN) ==================
 
     /**
      * Validate itinerary and return warnings grouped by dayNumber.

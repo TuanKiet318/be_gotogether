@@ -24,15 +24,42 @@ public class DestinationController {
 
     // 1. GET ALL DESTINATIONS
     @GetMapping("/destinations")
-    public ApiResponse<List<DestinationSummaryDto>> getAllDestinations() {
+    public ApiResponse<PagedResponse<DestinationSummaryDto>> getDestinations(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "9") Integer size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDirection) {
+
         try {
-            List<DestinationSummaryDto> destinations = destinationService.getAllDestinations();
-            return ApiResponse.success(destinations);
+            DestinationSearchRequest request = new DestinationSearchRequest();
+            request.setSearch(search);
+            request.setPage(page);
+            request.setSize(size);
+            request.setSortBy(sortBy);
+            request.setSortDirection(sortDirection);
+
+            PagedResponse<DestinationSummaryDto> response = destinationService.searchDestinations(request);
+            return ApiResponse.success(response);
         } catch (Exception e) {
             return ApiResponse.error(500, "Internal server error: " + e.getMessage());
         }
     }
 
+    @GetMapping("/destinations/all")
+    public ApiResponse<List<DestinationSummaryDto>> getAllDestinations() {
+        try {
+            // Tạo request với size lớn để lấy tất cả
+            DestinationSearchRequest request = new DestinationSearchRequest();
+            request.setPage(0);
+            request.setSize(1000); // Số lớn để lấy hết
+
+            PagedResponse<DestinationSummaryDto> pagedResponse = destinationService.searchDestinations(request);
+            return ApiResponse.success(pagedResponse.getContent());
+        } catch (Exception e) {
+            return ApiResponse.error(500, "Internal server error: " + e.getMessage());
+        }
+    }
     // 2. GET DESTINATION DETAIL
     @GetMapping("/destinations/{destinationId}")
     public ApiResponse<DestinationDetailDto> getDestinationDetail(@PathVariable String destinationId) {

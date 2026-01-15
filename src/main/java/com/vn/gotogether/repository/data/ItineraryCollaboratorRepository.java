@@ -2,6 +2,9 @@ package com.vn.gotogether.repository.data;
 
 import com.vn.gotogether.entity.ItineraryCollaborator;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -17,4 +20,8 @@ public interface ItineraryCollaboratorRepository extends JpaRepository<Itinerary
     // 🆕 Thêm hàm này để lấy tất cả itinerary mà user đang là collaborator
     List<ItineraryCollaborator> findByUser_Id(String userId);
     Optional<ItineraryCollaborator> findByItinerary_IdAndUser_Id(String itineraryId, String userId);
+
+    @Query("SELECT ic FROM ItineraryCollaborator ic WHERE ic.itinerary.id = :itineraryId AND ic.user.id = :userId")
+    Optional<ItineraryCollaborator> findWithUserAndItinerary(@Param("itineraryId") String itineraryId,
+                                                             @Param("userId") String userId);
 }

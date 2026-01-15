@@ -707,4 +707,35 @@ public class DestinationService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
+
+    public PagedResponse<DestinationSummaryDto> searchDestinations(DestinationSearchRequest request) {
+        // Tạo Pageable từ request
+        Sort sort = Sort.by(
+                request.getSortDirection().equalsIgnoreCase("DESC") ?
+                        Sort.Direction.DESC : Sort.Direction.ASC,
+                request.getSortBy()
+        );
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), sort);
+
+        // Gọi repository
+        Page<Destination> page = destinationRepository.searchDestinations(
+                request.getSearch(),
+                pageable
+        );
+
+        // Convert sang DTO
+        List<DestinationSummaryDto> dtos = page.getContent().stream()
+                .map(this::convertToSummaryDto)
+                .collect(Collectors.toList());
+
+        // Tạo response
+        return new PagedResponse<>(
+                dtos,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isLast()
+        );
+    }
 }
