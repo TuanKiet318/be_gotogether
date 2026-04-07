@@ -43,6 +43,12 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, String> {
             Pageable pageable
     );
 
+    Page<Itinerary> findByTitleContainingIgnoreCaseOrUser_NameContainingIgnoreCase(
+            String titleKeyword,
+            String authorKeyword,
+            Pageable pageable
+    );
+
     // tất cả itineraries theo destination
     Page<Itinerary> findByDestination_Id(
             String destinationId,

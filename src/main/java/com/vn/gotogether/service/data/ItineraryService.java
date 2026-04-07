@@ -437,6 +437,71 @@ public class ItineraryService {
                 .canEdit(canEdit)
                 .build();
     }
+    // Thêm vào com.vn.gotogether.service.data.ItineraryService
+
+    @Transactional
+    public ItineraryFeaturedDetailResponse cloneAndFeatureByAdmin(
+            String adminId,
+            String sourceItineraryId,
+            String customOverview,
+            Set<String> heroImageUrls) {
+
+        // 1. Lấy lịch trình gốc
+        Itinerary source = itineraryRepo.findById(sourceItineraryId)
+                .orElseThrow(() -> new InvalidDataException("Lịch trình gốc không tồn tại"));
+
+        User admin = userRepo.findById(adminId)
+                .orElseThrow(() -> new InvalidDataException("Admin không tồn tại"));
+
+        Destination dest = source.getDestination();
+        if (dest == null) {
+            throw new InvalidDataException("Lịch trình gốc không có Destination hợp lệ");
+        }
+
+        // 2. Tạo bản Clone
+        Itinerary cloned = Itinerary.builder()
+                .user(admin) // Gán chủ sở hữu bản này cho Admin
+                .destination(dest)
+                .title(source.getTitle()) // Giữ nguyên tên gốc, hoặc bạn có thể đổi
+                .startDate(source.getStartDate())
+                .endDate(source.getEndDate())
+                .overview(customOverview) // Ghi đè Overview mới của Admin
+                .imageHero(heroImageUrls) // Ghi đè Ảnh bìa mới
+                .isFeatured(true)         // Bật cờ nổi bật luôn
+                .isPublic(true)           // Chắc chắn là public
+                .tags(source.getTags())   // Có thể copy tags từ bài gốc nếu muốn
+                .build();
+
+        cloned = itineraryRepo.save(cloned);
+
+        // 3. Copy các Items (Địa điểm từng ngày) giống hệt hàm cloneItinerary của bạn
+        List<ItineraryItem> srcItems = itemRepo.findByItinerary_IdOrderByDayNumberAscOrderInDayAsc(sourceItineraryId);
+        List<ItineraryItem> toSave = new ArrayList<>(srcItems.size());
+
+        for (ItineraryItem src : srcItems) {
+            ItineraryItem clonedItem = ItineraryItem.builder()
+                    .itinerary(cloned)
+                    .place(src.getPlace())
+                    .dayNumber(src.getDayNumber())
+                    .orderInDay(src.getOrderInDay() == null ? 0 : src.getOrderInDay())
+                    .startTime(src.getStartTime())
+                    .endTime(src.getEndTime())
+                    .description(src.getDescription())
+                    .estimatedCost(src.getEstimatedCost())
+                    .transportMode(src.getTransportMode())
+                    .build();
+            toSave.add(clonedItem);
+        }
+
+        if (!toSave.isEmpty()) {
+            itemRepo.saveAll(toSave);
+        }
+
+        // 4. Trả về response (Sử dụng lại hàm map bạn đã viết)
+        // Lưu ý: Cần gán lại items vào cloned để hàm mapToFeaturedDetail không bị lỗi rỗng item
+        cloned.setItems(toSave);
+        return mapToFeaturedDetail(cloned);
+    }
 
     public ItineraryFeaturedDetailResponse getFeaturedDetail(String itineraryId) {
 
