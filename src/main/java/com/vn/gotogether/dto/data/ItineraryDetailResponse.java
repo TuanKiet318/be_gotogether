@@ -14,6 +14,7 @@ public class ItineraryDetailResponse {
     private List<Item> items;
     private String destinationId;
     private String destinationName;
+    private String destinationImage;
 
     private String myRole;   // OWNER | EDITOR | VIEWER
     private boolean canEdit;

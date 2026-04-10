@@ -11,8 +11,9 @@ public class ItinerarySummaryResponse {
     private long totalItems;
     private String destinationId;
     private String destinationName;
+    private String destinationImage;
     private String ownerId;
     private String ownerName;
     private String ownerAvatar;
-    private boolean isOwner;  // Thêm trường này
+    private boolean isOwner;
 }

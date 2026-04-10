@@ -47,6 +47,18 @@ public class ItineraryService {
         itineraryValidationService.validateItineraryEditable(itineraryId, userId);
     }
 
+    private String getDestinationImageUrl(Destination destination) {
+        if (destination == null || destination.getImages() == null || destination.getImages().isEmpty()) {
+            return null;
+        }
+
+        return destination.getImages().stream()
+                .map(DestinationImage::getImageUrl)
+                .filter(url -> url != null && !url.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
     @Transactional(Transactional.TxType.SUPPORTS)
     public List<ItinerarySummaryResponse> listByUser(
             String userId,
@@ -121,19 +133,24 @@ public class ItineraryService {
 
         // map -> response
         return result.stream()
-                .map(it -> ItinerarySummaryResponse.builder()
-                        .id(it.getId())
-                        .title(it.getTitle())
-                        .startDate(it.getStartDate())
-                        .endDate(it.getEndDate())
-                        .totalItems(itemRepo.countByItinerary_Id(it.getId()))
-                        .destinationId(it.getDestination() != null ? it.getDestination().getId() : null)
-                        .destinationName(it.getDestination() != null ? it.getDestination().getName() : null)
-                        .ownerId(it.getUser() != null ? it.getUser().getId() : null)
-                        .ownerName(it.getUser() != null ? it.getUser().getName() : null)
-                        .ownerAvatar(it.getUser() != null ? it.getUser().getAvatar() : null)
-                        .isOwner(userId.equals(it.getUser() != null ? it.getUser().getId() : null))
-                        .build())
+                .map(it -> {
+                    String destinationImage = getDestinationImageUrl(it.getDestination());
+
+                    return ItinerarySummaryResponse.builder()
+                            .id(it.getId())
+                            .title(it.getTitle())
+                            .startDate(it.getStartDate())
+                            .endDate(it.getEndDate())
+                            .totalItems(itemRepo.countByItinerary_Id(it.getId()))
+                            .destinationId(it.getDestination() != null ? it.getDestination().getId() : null)
+                            .destinationName(it.getDestination() != null ? it.getDestination().getName() : null)
+                            .destinationImage(destinationImage)
+                            .ownerId(it.getUser() != null ? it.getUser().getId() : null)
+                            .ownerName(it.getUser() != null ? it.getUser().getName() : null)
+                            .ownerAvatar(it.getUser() != null ? it.getUser().getAvatar() : null)
+                            .isOwner(userId.equals(it.getUser() != null ? it.getUser().getId() : null))
+                            .build();
+                })
                 .toList();
     }
 
@@ -339,7 +356,7 @@ public class ItineraryService {
 //        if (!it.isPublic()&&!permissionService.canView(itineraryId, userId)) {
 //            throw new AccessDeniedException("Bạn không có quyền truy cập lịch trình này");
 //        }
-
+        String destinationImage = getDestinationImageUrl(it.getDestination());
         // ==== TÍNH ROLE CỦA NGƯỜI DÙNG HIỆN TẠI TRONG ITINERARY ====
         String myRole = "VIEWER";
         boolean owner = it.getUser() != null && userId.equals(it.getUser().getId());
@@ -393,6 +410,7 @@ public class ItineraryService {
                 .endDate(it.getEndDate())
                 .destinationId(it.getDestination().getId())
                 .destinationName(it.getDestination().getName())
+                .destinationImage(destinationImage) 
                 .items(itemDtos)
                 .myRole(myRole)
                 .canEdit(canEdit)
