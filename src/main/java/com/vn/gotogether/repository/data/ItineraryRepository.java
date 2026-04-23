@@ -42,6 +42,12 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, String> {
             String destinationId,
             Pageable pageable
     );
+    @Query("SELECT i FROM Itinerary i WHERE i.destination.id = :destinationId AND (LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(i.user.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Itinerary> searchByDestinationAndKeywordForAdmin(
+            @Param("destinationId") String destinationId,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 
     Page<Itinerary> findByTitleContainingIgnoreCaseOrUser_NameContainingIgnoreCase(
             String titleKeyword,

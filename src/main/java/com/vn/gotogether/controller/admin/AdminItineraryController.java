@@ -59,21 +59,21 @@ public class AdminItineraryController {
     }
 
 
-    @GetMapping("/search")
-    public Page<ItinerarySummaryResponse> searchItinerariesForAdmin(
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        // Cần thêm hàm findByTitleContainingIgnoreCase... vào ItineraryRepository
-        return itineraryRepo.findByTitleContainingIgnoreCaseOrUser_NameContainingIgnoreCase(
-                keyword, keyword, PageRequest.of(page, size)
-        ).map(i -> ItinerarySummaryResponse.builder()
-                .id(i.getId())
-                .title(i.getTitle())
-                .ownerName(i.getUser() != null ? i.getUser().getName() : "Unknown")
-                .build());
-    }
+//    @GetMapping("/search")
+//    public Page<ItinerarySummaryResponse> searchItinerariesForAdmin(
+//            @RequestParam String keyword,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size) {
+//
+//        // Cần thêm hàm findByTitleContainingIgnoreCase... vào ItineraryRepository
+//        return itineraryRepo.findByTitleContainingIgnoreCaseOrUser_NameContainingIgnoreCase(
+//                keyword, keyword, PageRequest.of(page, size)
+//        ).map(i -> ItinerarySummaryResponse.builder()
+//                .id(i.getId())
+//                .title(i.getTitle())
+//                .ownerName(i.getUser() != null ? i.getUser().getName() : "Unknown")
+//                .build());
+//    }
 
     // TÍNH NĂNG 2: API MỚI CHO VIỆC CLONE & VÀ ĐÁNH DẤU NỔI BẬT
     @PostMapping(
@@ -98,6 +98,23 @@ public class AdminItineraryController {
                 request.getOverview(),
                 heroImageUrls
         );
+    }
+
+    @GetMapping("/search")
+    public Page<ItinerarySummaryResponse> searchItinerariesForAdmin(
+            @RequestParam String destinationId, // Bắt buộc truyền destinationId
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return itineraryRepo.searchByDestinationAndKeywordForAdmin(
+                destinationId, keyword, PageRequest.of(page, size)
+        ).map(i -> ItinerarySummaryResponse.builder()
+                .id(i.getId())
+                .title(i.getTitle())
+                .ownerName(i.getUser() != null ? i.getUser().getName() : "Unknown")
+//                .overview(i.getOverview())
+                .build());
     }
 
     /* ===================== PRIVATE UPLOAD ===================== */

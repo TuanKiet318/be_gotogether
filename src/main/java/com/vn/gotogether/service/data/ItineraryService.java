@@ -499,7 +499,8 @@ public class ItineraryService {
 
         // 4. Trả về response (Sử dụng lại hàm map bạn đã viết)
         // Lưu ý: Cần gán lại items vào cloned để hàm mapToFeaturedDetail không bị lỗi rỗng item
-        cloned.setItems(toSave);
+        cloned.getItems().addAll(toSave);
+
         return mapToFeaturedDetail(cloned);
     }
 
