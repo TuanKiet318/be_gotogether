@@ -1,6 +1,7 @@
 package com.vn.gotogether.repository.data;
 
 import com.vn.gotogether.entity.Notification;
+import com.vn.gotogether.enums.EntityType;
 import com.vn.gotogether.enums.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -95,5 +96,20 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
     int deleteByEntity(
             @Param("entityId") String entityId,
             @Param("entityType") String entityType
+    );
+
+    @Query("SELECT CASE WHEN COUNT(n) > 0 THEN true ELSE false END FROM Notification n " +
+            "WHERE n.user.id = :userId " +
+            "AND n.type = :type " +
+            "AND n.entityType = :entityType " +
+            "AND n.entityId = :entityId " +
+            "AND n.createdAt BETWEEN :from AND :to")
+    boolean existsByUserIdAndTypeAndEntityTypeAndEntityIdAndCreatedAtBetween(
+            @Param("userId") String userId,
+            @Param("type") NotificationType type,
+            @Param("entityType") EntityType entityType,
+            @Param("entityId") String entityId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
     );
 }

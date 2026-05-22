@@ -273,6 +273,28 @@ public class NotificationService {
                 .build());
     }
 
+            /**
+             * Tạo thông báo cảnh báo thời tiết cho itinerary
+             */
+            @Transactional
+            public void notifyItineraryWeatherAlert(
+                String userId,
+                String itineraryId,
+                String itineraryTitle,
+                String weatherSummary
+            ) {
+            String content = "Cảnh báo thời tiết cho lịch trình \"" + itineraryTitle + "\": " + weatherSummary;
+
+            createNotification(CreateNotificationRequest.builder()
+                .userId(userId)
+                .actorId(null)
+                .type(NotificationType.WEATHER_ALERT)
+                .entityType(com.vn.gotogether.enums.EntityType.ITINERARY)
+                .entityId(itineraryId)
+                .content(content)
+                .build());
+            }
+
     /**
      * Convert entity to response DTO
      */

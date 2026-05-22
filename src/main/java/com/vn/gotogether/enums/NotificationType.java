@@ -7,6 +7,7 @@ public enum NotificationType {
     TOUR_STATUS_CHANGE("Trạng thái tour thay đổi"),
     ITINERARY_INVITE("Lời mời tham gia lịch trình"),
     ITINERARY_SHARED("Chia sẻ lịch trình"),
+    WEATHER_ALERT("Cảnh báo thời tiết"),
     PLACE_REVIEW("Đánh giá địa điểm"),
     GUIDE_APPLICATION_STATUS("Trạng thái đơn đăng ký hướng dẫn viên"),
     SYSTEM("Thông báo hệ thống");
